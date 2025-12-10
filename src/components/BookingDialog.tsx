@@ -39,7 +39,7 @@ export function BookingDialog({
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
 
   const room = rooms.find((r) => r.id === roomId);
-  const availableCustomers = user ? getCustomersByStaff(user.staffNo) : [];
+  const availableCustomers = user ? getCustomersByStaff(user.staffNo, user.role) : [];
 
   useEffect(() => {
     if (open && preselectedCustomerId) {
@@ -61,27 +61,20 @@ export function BookingDialog({
       return;
     }
 
-    const isLeader = user?.role === 'leader';
-    const status = isLeader ? 'booked' : 'pending';
-
+    // Salesperson always creates pending bookings
     addBooking({
       roomId,
       date,
       customerId: selectedCustomerId,
       customerName: customer.name,
       price: room?.price || 0,
-      status,
+      status: 'pending',
       salesId: user?.staffNo || '',
       salesName: user?.name || '',
       salesStaffNo: user?.staffNo || '',
     });
 
-    if (isLeader) {
-      toast.success('预定成功');
-    } else {
-      toast.success('申请已提交，等待队长审核');
-    }
-
+    toast.success('申请已提交，等待队长审核');
     onClose();
   };
 
@@ -145,7 +138,7 @@ export function BookingDialog({
             取消
           </Button>
           <Button variant="mobileAction" size="full" onClick={handleSubmit}>
-            {user?.role === 'leader' ? '预定' : '提交申请'}
+            提交申请
           </Button>
         </div>
       </DialogContent>
