@@ -1,31 +1,56 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { format, addDays } from 'date-fns';
+import { format, addDays, addWeeks } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { BookingDialog } from '@/components/BookingDialog';
 import { BookingDetailDialog } from '@/components/BookingDetailDialog';
+import { LeaderBookingDetailDialog } from '@/components/LeaderBookingDetailDialog';
 import { useData, BookingStatus } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 
 export default function RoomMatrix() {
   const location = useLocation();
-  const { rooms, getBookingByRoomAndDate } = useData();
+  const { user } = useAuth();
+  const { stores, getRoomsByStore, getBookingByRoomAndDate } = useData();
   const [selectedCell, setSelectedCell] = useState<{ roomId: string; date: string } | null>(null);
   const [viewBookingId, setViewBookingId] = useState<string | null>(null);
+  const [selectedStoreId, setSelectedStoreId] = useState(stores[0]?.id || 'store1');
+  const [weekOffset, setWeekOffset] = useState(0);
 
   const preselectedCustomerId = location.state?.selectedCustomerId;
+  const isLeader = user?.role === 'leader';
 
-  // Generate 7 days starting from today
+  // Generate 7 days starting from today + week offset
   const today = new Date();
-  const dates = Array.from({ length: 7 }, (_, i) => addDays(today, i));
+  const startDate = addWeeks(today, weekOffset);
+  const dates = Array.from({ length: 7 }, (_, i) => addDays(startDate, i));
+
+  // Max 8 weeks (2 months) into the future
+  const maxWeekOffset = 8;
+
+  const rooms = getRoomsByStore(selectedStoreId);
 
   const handleCellClick = (roomId: string, date: string) => {
     const booking = getBookingByRoomAndDate(roomId, date);
     if (booking) {
       setViewBookingId(booking.id);
-    } else {
+    } else if (!isLeader) {
+      // Only salesperson can create bookings
       setSelectedCell({ roomId, date });
+    } else {
+      // Leader can view free cell details too
+      setViewBookingId(`free_${roomId}_${date}`);
     }
   };
 
@@ -44,6 +69,8 @@ export default function RoomMatrix() {
         return 'bg-status-booked/80 text-white';
       case 'finished':
         return 'bg-status-finished/80 text-white';
+      case 'cancelled':
+        return 'bg-muted border-2 border-status-rejected';
       default:
         return 'bg-muted';
     }
@@ -57,6 +84,8 @@ export default function RoomMatrix() {
         return '已订';
       case 'finished':
         return '完成';
+      case 'cancelled':
+        return '已取消';
       default:
         return '';
     }
@@ -64,10 +93,48 @@ export default function RoomMatrix() {
 
   return (
     <div className="min-h-screen bg-background">
-      <PageHeader title="排房情况" />
+      <PageHeader title={isLeader ? "排房详情" : "排房情况"} />
+
+      {/* Store Selector & Week Navigation */}
+      <div className="px-4 py-3 flex items-center justify-between bg-card border-b border-border">
+        <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
+          <SelectTrigger className="w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {stores.map((store) => (
+              <SelectItem key={store.id} value={store.id}>
+                {store.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={weekOffset === 0}
+            onClick={() => setWeekOffset(Math.max(0, weekOffset - 1))}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm text-muted-foreground min-w-[60px] text-center">
+            {weekOffset === 0 ? '本周' : `+${weekOffset}周`}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={weekOffset >= maxWeekOffset}
+            onClick={() => setWeekOffset(Math.min(maxWeekOffset, weekOffset + 1))}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
 
       {/* Legend */}
-      <div className="px-4 py-3 flex items-center gap-4 bg-card border-b border-border">
+      <div className="px-4 py-3 flex items-center gap-4 bg-card border-b border-border overflow-x-auto">
         <div className="flex items-center gap-1.5">
           <div className="w-4 h-4 rounded bg-muted" />
           <span className="text-xs text-muted-foreground">可订</span>
@@ -139,21 +206,31 @@ export default function RoomMatrix() {
         </table>
       </div>
 
-      {/* Booking Dialog */}
-      <BookingDialog
-        open={!!selectedCell}
-        onClose={() => setSelectedCell(null)}
-        roomId={selectedCell?.roomId || ''}
-        date={selectedCell?.date || ''}
-        preselectedCustomerId={preselectedCustomerId}
-      />
+      {/* Booking Dialog - Only for salesperson */}
+      {!isLeader && (
+        <BookingDialog
+          open={!!selectedCell}
+          onClose={() => setSelectedCell(null)}
+          roomId={selectedCell?.roomId || ''}
+          date={selectedCell?.date || ''}
+          preselectedCustomerId={preselectedCustomerId}
+        />
+      )}
 
       {/* Booking Detail Dialog */}
-      <BookingDetailDialog
-        open={!!viewBookingId}
-        onClose={() => setViewBookingId(null)}
-        bookingId={viewBookingId || ''}
-      />
+      {isLeader ? (
+        <LeaderBookingDetailDialog
+          open={!!viewBookingId}
+          onClose={() => setViewBookingId(null)}
+          bookingId={viewBookingId || ''}
+        />
+      ) : (
+        <BookingDetailDialog
+          open={!!viewBookingId}
+          onClose={() => setViewBookingId(null)}
+          bookingId={viewBookingId || ''}
+        />
+      )}
     </div>
   );
 }

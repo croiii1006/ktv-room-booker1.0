@@ -14,6 +14,14 @@ import CustomerDetail from "./pages/CustomerDetail";
 import RoomMatrix from "./pages/RoomMatrix";
 import OrderList from "./pages/OrderList";
 import ApprovalList from "./pages/ApprovalList";
+import RechargeRequest from "./pages/RechargeRequest";
+import RechargeRequestList from "./pages/RechargeRequestList";
+import ConsumptionRequestList from "./pages/ConsumptionRequestList";
+import TeamManagement from "./pages/TeamManagement";
+import TeamMemberDetail from "./pages/TeamMemberDetail";
+import BookingApproval from "./pages/BookingApproval";
+import RechargeApproval from "./pages/RechargeApproval";
+import ConsumptionApproval from "./pages/ConsumptionApproval";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -80,6 +88,70 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <ApprovalList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/recharge/:id"
+                element={
+                  <ProtectedRoute>
+                    <RechargeRequest />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/recharge-requests"
+                element={
+                  <ProtectedRoute>
+                    <RechargeRequestList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/consumption-requests"
+                element={
+                  <ProtectedRoute>
+                    <ConsumptionRequestList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/team"
+                element={
+                  <ProtectedRoute>
+                    <TeamManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/team/:staffNo"
+                element={
+                  <ProtectedRoute>
+                    <TeamMemberDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/booking-approval"
+                element={
+                  <ProtectedRoute>
+                    <BookingApproval />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/recharge-approval"
+                element={
+                  <ProtectedRoute>
+                    <RechargeApproval />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/consumption-approval"
+                element={
+                  <ProtectedRoute>
+                    <ConsumptionApproval />
                   </ProtectedRoute>
                 }
               />

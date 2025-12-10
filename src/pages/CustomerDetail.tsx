@@ -26,6 +26,10 @@ export default function CustomerDetail() {
     navigate('/rooms', { state: { selectedCustomerId: customer.id } });
   };
 
+  const handleRecharge = () => {
+    navigate(`/recharge/${customer.id}`);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <PageHeader title="客户详情" />
@@ -54,15 +58,23 @@ export default function CustomerDetail() {
           <InfoRow label="开卡日期" value={customer.openDate} />
         </div>
 
-        {/* Action Button */}
-        <Button
-          variant="mobileAction"
-          size="full"
-          onClick={handleBookRoom}
-          className="mt-6"
-        >
-          订房
-        </Button>
+        {/* Action Buttons */}
+        <div className="space-y-3 mt-6">
+          <Button
+            variant="mobileAction"
+            size="full"
+            onClick={handleBookRoom}
+          >
+            订房
+          </Button>
+          <Button
+            variant="mobile"
+            size="full"
+            onClick={handleRecharge}
+          >
+            充值申请
+          </Button>
+        </div>
       </main>
     </div>
   );

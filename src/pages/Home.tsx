@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Users, LayoutGrid, FileText, CheckSquare, LogOut } from 'lucide-react';
+import { Users, LayoutGrid, FileText, CheckSquare, LogOut, CreditCard, ShoppingBag, UsersRound } from 'lucide-react';
 
 export default function Home() {
   const { user, logout } = useAuth();
@@ -38,46 +38,110 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="p-4 space-y-3">
-        <Button
-          variant="mobile"
-          size="full"
-          onClick={() => navigate('/customers')}
-          className="justify-start px-5"
-        >
-          <Users className="w-6 h-6 mr-3 text-primary" />
-          我的客户
-        </Button>
-
-        <Button
-          variant="mobile"
-          size="full"
-          onClick={() => navigate('/rooms')}
-          className="justify-start px-5"
-        >
-          <LayoutGrid className="w-6 h-6 mr-3 text-primary" />
-          排房情况
-        </Button>
-
         {user?.role === 'sales' ? (
-          <Button
-            variant="mobile"
-            size="full"
-            onClick={() => navigate('/orders')}
-            className="justify-start px-5"
-          >
-            <FileText className="w-6 h-6 mr-3 text-primary" />
-            订单申请
-          </Button>
+          <>
+            <Button
+              variant="mobile"
+              size="full"
+              onClick={() => navigate('/customers')}
+              className="justify-start px-5"
+            >
+              <Users className="w-6 h-6 mr-3 text-primary" />
+              我的客户
+            </Button>
+
+            <Button
+              variant="mobile"
+              size="full"
+              onClick={() => navigate('/rooms')}
+              className="justify-start px-5"
+            >
+              <LayoutGrid className="w-6 h-6 mr-3 text-primary" />
+              排房情况
+            </Button>
+
+            <Button
+              variant="mobile"
+              size="full"
+              onClick={() => navigate('/orders')}
+              className="justify-start px-5"
+            >
+              <FileText className="w-6 h-6 mr-3 text-primary" />
+              订房申请
+            </Button>
+
+            <Button
+              variant="mobile"
+              size="full"
+              onClick={() => navigate('/recharge-requests')}
+              className="justify-start px-5"
+            >
+              <CreditCard className="w-6 h-6 mr-3 text-primary" />
+              充值申请
+            </Button>
+
+            <Button
+              variant="mobile"
+              size="full"
+              onClick={() => navigate('/consumption-requests')}
+              className="justify-start px-5"
+            >
+              <ShoppingBag className="w-6 h-6 mr-3 text-primary" />
+              确认消费申请
+            </Button>
+          </>
         ) : (
-          <Button
-            variant="mobile"
-            size="full"
-            onClick={() => navigate('/approval')}
-            className="justify-start px-5"
-          >
-            <CheckSquare className="w-6 h-6 mr-3 text-primary" />
-            订单审核
-          </Button>
+          <>
+            <Button
+              variant="mobile"
+              size="full"
+              onClick={() => navigate('/team')}
+              className="justify-start px-5"
+            >
+              <UsersRound className="w-6 h-6 mr-3 text-primary" />
+              团队管理
+            </Button>
+
+            <Button
+              variant="mobile"
+              size="full"
+              onClick={() => navigate('/rooms')}
+              className="justify-start px-5"
+            >
+              <LayoutGrid className="w-6 h-6 mr-3 text-primary" />
+              排房详情
+            </Button>
+
+            <Button
+              variant="mobile"
+              size="full"
+              onClick={() => navigate('/booking-approval')}
+              className="justify-start px-5"
+            >
+              <CheckSquare className="w-6 h-6 mr-3 text-primary" />
+              订房申请审核
+            </Button>
+
+            <Button
+              variant="mobile"
+              size="full"
+              onClick={() => navigate('/recharge-approval')}
+              className="justify-start px-5"
+            >
+              <CreditCard className="w-6 h-6 mr-3 text-primary" />
+              充值申请审核
+            </Button>
+
+            <Button
+              variant="mobile"
+              size="full"
+              onClick={() => navigate('/consumption-approval')}
+              className="justify-start px-5"
+            >
+              <ShoppingBag className="w-6 h-6 mr-3 text-primary" />
+              确认消费申请审核
+            </Button>
+          </>
         )}
       </main>
     </div>
