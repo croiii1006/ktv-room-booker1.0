@@ -138,10 +138,10 @@ const generateMockData = () => {
   ];
 
   const customers: Customer[] = [
-    { id: 'c1', name: '陈先生', phone: '13800138001', idCard: '310101199001011234', cardType: '金', openDate: '2024-01-15', balance: 5000, giftAmount: 500, salesId: 'S001' },
-    { id: 'c2', name: '刘女士', phone: '13800138002', idCard: '310101199202022345', cardType: '银', openDate: '2024-02-20', balance: 2000, giftAmount: 200, salesId: 'S001' },
-    { id: 'c3', name: '王先生', phone: '13800138003', idCard: '310101198803033456', cardType: '普', openDate: '2024-03-10', balance: 800, giftAmount: 0, salesId: 'S002' },
-    { id: 'c4', name: '赵女士', phone: '13800138004', idCard: '310101199504044567', cardType: '金', openDate: '2024-01-01', balance: 8000, giftAmount: 1000, salesId: 'S001' },
+    { id: 'c0000001', name: '陈先生', phone: '13800138001', idCard: '310101199001011234', cardType: '金', openDate: '2024-01-15', balance: 5000, giftAmount: 500, salesId: 'S0000001' },
+    { id: 'c0000002', name: '刘女士', phone: '13800138002', idCard: '310101199202022345', cardType: '银', openDate: '2024-02-20', balance: 2000, giftAmount: 200, salesId: 'S0000001' },
+    { id: 'c0000003', name: '王先生', phone: '13800138003', idCard: '310101198803033456', cardType: '普', openDate: '2024-03-10', balance: 800, giftAmount: 0, salesId: 'S0000002' },
+    { id: 'c0000004', name: '赵女士', phone: '13800138004', idCard: '310101199504044567', cardType: '金', openDate: '2024-01-01', balance: 8000, giftAmount: 1000, salesId: 'S0000001' },
   ];
 
   const rooms: Room[] = [
@@ -161,16 +161,16 @@ const generateMockData = () => {
   ];
 
   const teamMembers: TeamMember[] = [
-    { id: 'tm1', staffNo: 'S001', name: '张三', leaderId: 'L001' },
-    { id: 'tm2', staffNo: 'S002', name: '李四', leaderId: 'L001' },
+    { id: 'tm1', staffNo: 'S0000001', name: '张三', leaderId: 'L0000001' },
+    { id: 'tm2', staffNo: 'S0000002', name: '李四', leaderId: 'L0000001' },
   ];
 
   const today = new Date();
   const bookings: Booking[] = [
-    { id: 'b1', roomId: 'r1', date: format(today, 'yyyy-MM-dd'), customerId: 'c1', customerName: '陈先生', price: 288, status: 'booked', salesId: 'S001', salesName: '张三', salesStaffNo: 'S001', createdAt: format(addDays(today, -1), 'yyyy-MM-dd HH:mm') },
-    { id: 'b2', roomId: 'r3', date: format(addDays(today, 1), 'yyyy-MM-dd'), customerId: 'c2', customerName: '刘女士', price: 388, status: 'pending', salesId: 'S001', salesName: '张三', salesStaffNo: 'S001', createdAt: format(today, 'yyyy-MM-dd HH:mm') },
-    { id: 'b3', roomId: 'r5', date: format(addDays(today, 2), 'yyyy-MM-dd'), customerId: 'c4', customerName: '赵女士', price: 588, status: 'booked', salesId: 'S001', salesName: '张三', salesStaffNo: 'S001', createdAt: format(addDays(today, -2), 'yyyy-MM-dd HH:mm') },
-    { id: 'b4', roomId: 'r2', date: format(addDays(today, -1), 'yyyy-MM-dd'), customerId: 'c3', customerName: '王先生', price: 288, status: 'finished', salesId: 'S002', salesName: '李四', salesStaffNo: 'S002', createdAt: format(addDays(today, -3), 'yyyy-MM-dd HH:mm') },
+    { id: 'b1', roomId: 'r1', date: format(today, 'yyyy-MM-dd'), customerId: 'c0000001', customerName: '陈先生', price: 288, status: 'booked', salesId: 'S0000001', salesName: '张三', salesStaffNo: 'S0000001', createdAt: format(addDays(today, -1), 'yyyy-MM-dd HH:mm') },
+    { id: 'b2', roomId: 'r3', date: format(addDays(today, 1), 'yyyy-MM-dd'), customerId: 'c0000002', customerName: '刘女士', price: 388, status: 'pending', salesId: 'S0000001', salesName: '张三', salesStaffNo: 'S0000001', createdAt: format(today, 'yyyy-MM-dd HH:mm') },
+    { id: 'b3', roomId: 'r5', date: format(addDays(today, 2), 'yyyy-MM-dd'), customerId: 'c0000004', customerName: '赵女士', price: 588, status: 'booked', salesId: 'S0000001', salesName: '张三', salesStaffNo: 'S0000001', createdAt: format(addDays(today, -2), 'yyyy-MM-dd HH:mm') },
+    { id: 'b4', roomId: 'r2', date: format(addDays(today, -1), 'yyyy-MM-dd'), customerId: 'c0000003', customerName: '王先生', price: 288, status: 'finished', salesId: 'S0000002', salesName: '李四', salesStaffNo: 'S0000002', createdAt: format(addDays(today, -3), 'yyyy-MM-dd HH:mm') },
   ];
 
   const rechargeRequests: RechargeRequest[] = [];
@@ -223,26 +223,44 @@ export function DataProvider({ children }: { children: ReactNode }) {
     saveData({ ...data, bookings: [...data.bookings, newBooking] });
   };
 
+  // ✅ 通用的更新 Booking 方法：所有修改 Booking 都用它
   const updateBooking = (id: string, updates: Partial<Booking>) => {
-    saveData({
-      ...data,
-      bookings: data.bookings.map((b: Booking) => b.id === id ? { ...b, ...updates } : b)
+    setData(prev => {
+      const newBookings = prev.bookings.map((b: Booking) =>
+        b.id === id ? { ...b, ...updates } : b
+      );
+
+      const newData = {
+        ...prev,
+        bookings: newBookings,
+      };
+
+      console.log("[updateBooking] 更新后 →", newBookings);
+      localStorage.setItem("ktv_data_v2", JSON.stringify(newData));
+      return newData;
     });
   };
 
-  const updateBookingStatus = (id: string, status: BookingStatus, reason?: string) => {
-    saveData({
-      ...data,
-      bookings: data.bookings.map((b: Booking) => 
-        b.id === id ? { 
-          ...b, 
-          status,
-          ...(status === 'rejected' && reason ? { rejectReason: reason } : {}),
-          ...(status === 'cancelled' && reason ? { cancelReason: reason } : {})
-        } : b
-      )
-    });
+  // ✅ 如果项目里还有地方只想改 status，可以用这个包装一下
+  const updateBookingStatus = (
+    id: string,
+    status: BookingStatus,
+    reason?: string
+  ) => {
+    const updates: Partial<Booking> = { status };
+
+    if (status === "rejected" && reason) {
+      updates.rejectReason = reason;
+    }
+    if (status === "cancelled" && reason) {
+      updates.cancelReason = reason;
+    }
+
+    // 统一走 updateBooking，避免两套逻辑互相覆盖
+    updateBooking(id, updates);
   };
+
+
 
   const getBookingByRoomAndDate = (roomId: string, date: string) => {
     return data.bookings.find((b: Booking) => 
@@ -327,14 +345,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
     saveData({ ...data, consumptionRequests: [...data.consumptionRequests, newRequest] });
   };
 
-  const updateConsumptionStatus = (id: string, status: RequestStatus, reason?: string) => {
-    saveData({
-      ...data,
-      consumptionRequests: data.consumptionRequests.map((r: ConsumptionRequest) => 
-        r.id === id ? { ...r, status, ...(reason ? { rejectReason: reason } : {}) } : r
-      )
+  const updateConsumptionStatus = (
+    id: string,
+    status: RequestStatus,
+    reason?: string
+  ) => {
+    setData(prev => {
+      const newRequests = prev.consumptionRequests.map((r: ConsumptionRequest) =>
+        r.id === id
+          ? {
+              ...r,
+              status,
+              ...(status === "rejected" && reason ? { rejectReason: reason } : {}),
+            }
+          : r
+      );
+
+      const newData = {
+        ...prev,
+        consumptionRequests: newRequests,
+      };
+
+      console.log("[updateConsumptionStatus] 更新后 →", newRequests);
+
+      localStorage.setItem("ktv_data_v2", JSON.stringify(newData));
+      return newData;
     });
   };
+
+
 
   const getConsumptionRequestsBySales = (salesId: string) => {
     return data.consumptionRequests.filter((r: ConsumptionRequest) => r.serviceSalesId === salesId);
@@ -342,7 +381,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const getPendingConsumptionRequests = (leaderId: string) => {
     return data.consumptionRequests.filter((r: ConsumptionRequest) => 
-      r.leaderId === leaderId && r.status === 'pending'
+      r.leaderId === leaderId && r.status === "pending"
     );
   };
 

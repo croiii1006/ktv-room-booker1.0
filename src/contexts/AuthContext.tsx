@@ -21,15 +21,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const MOCK_USERS: Record<string, { password: string; user: User }> = {
   'sales001': {
     password: '123456',
-    user: { name: '张三', staffNo: 'S001', role: 'sales' }
+    user: { name: '张三', staffNo: 'S0000001', role: 'sales' }
   },
   'sales002': {
     password: '123456',
-    user: { name: '李四', staffNo: 'S002', role: 'sales' }
+    user: { name: '李四', staffNo: 'S0000002', role: 'sales' }
   },
   'leader001': {
     password: '123456',
-    user: { name: '王队长', staffNo: 'L001', role: 'leader' }
+    user: { name: '王队长', staffNo: 'L0000001', role: 'leader' }
   },
 };
 
