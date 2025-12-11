@@ -29,7 +29,7 @@ export default function Login() {
     
     if (success) {
       toast.success('登录成功');
-      navigate('/');
+      navigate('/home');
     } else {
       toast.error('账号或密码错误');
     }

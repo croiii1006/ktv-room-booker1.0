@@ -34,9 +34,15 @@ const App = () => (
           <Toaster position="top-center" />
           <BrowserRouter>
             <Routes>
+              {/* 根路径始终跳到登录页 */}
+              <Route path="/" element={<Navigate to="/login" replace />} />
+
+              {/* 登录页（唯一不需要登录的页面） */}
               <Route path="/login" element={<Login />} />
+
+              {/* 下面全部都需要登录 */}
               <Route
-                path="/"
+                path="/home"
                 element={
                   <ProtectedRoute>
                     <Home />
@@ -155,6 +161,8 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+
+              {/* 兜底：未匹配到的路由 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
