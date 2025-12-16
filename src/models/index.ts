@@ -30,6 +30,7 @@ export * from './reservation-cancel-req';
 export * from './reservation-create-req';
 export * from './reservation-resp';
 export * from './reservation-review-req';
+export * from './admin-direct-reservation-req';
 export * from './result-consume-resp';
 export * from './result-list-store-simple-resp';
 export * from './result-page-result-consume-resp';

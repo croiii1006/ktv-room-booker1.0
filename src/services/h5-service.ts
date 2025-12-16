@@ -1,0 +1,202 @@
+import apiClient from './api-client';
+import {
+  ReservationCreateReq,
+  ReservationReviewReq,
+  ReservationCancelReq,
+  ReservationResp,
+  PageResultReservationResp,
+  RechargeApplyCreateReq,
+  RechargeReviewReq,
+  RechargeResp,
+  PageResultRechargeResp,
+  ConsumeApplyCreateReq,
+  ConsumeReviewReq,
+  ConsumeResp,
+  PageResultConsumeResp,
+  ResultListStoreSimpleResp,
+  ResultRoomScheduleResp,
+  ResultString,
+  ResultVoid,
+} from '@/models';
+
+// ==================== 预定相关 ====================
+
+// 提交预定
+export const createReservation = async (request: ReservationCreateReq): Promise<ReservationResp> => {
+  const response = await apiClient.post<ReservationResp>('/api/h5/reservations', request);
+  return response.data;
+};
+
+// 预定审核通过（队长）
+export const approveReservation = async (request: ReservationReviewReq): Promise<ReservationResp> => {
+  const response = await apiClient.post<ReservationResp>('/api/h5/reservations/approve', request);
+  return response.data;
+};
+
+// 预定审核拒绝（队长）
+export const rejectReservation = async (request: ReservationReviewReq): Promise<ReservationResp> => {
+  const response = await apiClient.post<ReservationResp>('/api/h5/reservations/reject', request);
+  return response.data;
+};
+
+// 取消预定
+export const cancelReservation = async (request: ReservationCancelReq): Promise<ReservationResp> => {
+  const response = await apiClient.post<ReservationResp>('/api/h5/reservations/cancel', request);
+  return response.data;
+};
+
+// 预定详情
+export const getReservationDetail = async (id: number): Promise<ReservationResp> => {
+  const response = await apiClient.get<ReservationResp>(`/api/h5/reservations/${id}`);
+  return response.data;
+};
+
+// 待审核列表（队长）
+export const getPendingReservations = async (page?: number, size?: number): Promise<PageResultReservationResp> => {
+  const params = new URLSearchParams();
+  if (page) params.append('page', page.toString());
+  if (size) params.append('size', size.toString());
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const response = await apiClient.get<PageResultReservationResp>(`/api/h5/reservations/pending${query}`);
+  return response.data;
+};
+
+// 我的预定列表
+export const getMyReservations = async (page?: number, size?: number, status?: string): Promise<PageResultReservationResp> => {
+  const params = new URLSearchParams();
+  if (page) params.append('page', page.toString());
+  if (size) params.append('size', size.toString());
+  if (status) params.append('status', status);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const response = await apiClient.get<PageResultReservationResp>(`/api/h5/reservations/my${query}`);
+  return response.data;
+};
+
+// ==================== 充值相关 ====================
+
+// 提交充值申请
+export const createRechargeApply = async (request: RechargeApplyCreateReq): Promise<RechargeResp> => {
+  const response = await apiClient.post<RechargeResp>('/api/h5/recharge-applies', request);
+  return response.data;
+};
+
+// 充值审核通过（队长）
+export const approveRecharge = async (request: RechargeReviewReq): Promise<RechargeResp> => {
+  const response = await apiClient.post<RechargeResp>('/api/h5/recharge-applies/approve', request);
+  return response.data;
+};
+
+// 充值审核拒绝（队长）
+export const rejectRecharge = async (request: RechargeReviewReq): Promise<RechargeResp> => {
+  const response = await apiClient.post<RechargeResp>('/api/h5/recharge-applies/reject', request);
+  return response.data;
+};
+
+// 充值申请详情
+export const getRechargeDetail = async (id: number): Promise<RechargeResp> => {
+  const response = await apiClient.get<RechargeResp>(`/api/h5/recharge-applies/${id}`);
+  return response.data;
+};
+
+// 待审核列表（队长）
+export const getPendingRecharges = async (page?: number, size?: number): Promise<PageResultRechargeResp> => {
+  const params = new URLSearchParams();
+  if (page) params.append('page', page.toString());
+  if (size) params.append('size', size.toString());
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const response = await apiClient.get<PageResultRechargeResp>(`/api/h5/recharge-applies/pending${query}`);
+  return response.data;
+};
+
+// 我的充值申请列表
+export const getMyRecharges = async (page?: number, size?: number, status?: string): Promise<PageResultRechargeResp> => {
+  const params = new URLSearchParams();
+  if (page) params.append('page', page.toString());
+  if (size) params.append('size', size.toString());
+  if (status) params.append('status', status);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const response = await apiClient.get<PageResultRechargeResp>(`/api/h5/recharge-applies/my${query}`);
+  return response.data;
+};
+
+// ==================== 消费相关 ====================
+
+// 提交消费确认
+export const createConsumeApply = async (request: ConsumeApplyCreateReq): Promise<ConsumeResp> => {
+  const response = await apiClient.post<ConsumeResp>('/api/h5/consume-applies', request);
+  return response.data;
+};
+
+// 消费审核通过（队长）
+export const approveConsume = async (request: ConsumeReviewReq): Promise<ConsumeResp> => {
+  const response = await apiClient.post<ConsumeResp>('/api/h5/consume-applies/approve', request);
+  return response.data;
+};
+
+// 消费审核拒绝（队长）
+export const rejectConsume = async (request: ConsumeReviewReq): Promise<ConsumeResp> => {
+  const response = await apiClient.post<ConsumeResp>('/api/h5/consume-applies/reject', request);
+  return response.data;
+};
+
+// 消费详情
+export const getConsumeDetail = async (id: number): Promise<ConsumeResp> => {
+  const response = await apiClient.get<ConsumeResp>(`/api/h5/consume-applies/${id}`);
+  return response.data;
+};
+
+// 待审核列表（队长）
+export const getPendingConsumes = async (page?: number, size?: number): Promise<PageResultConsumeResp> => {
+  const params = new URLSearchParams();
+  if (page) params.append('page', page.toString());
+  if (size) params.append('size', size.toString());
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const response = await apiClient.get<PageResultConsumeResp>(`/api/h5/consume-applies/pending${query}`);
+  return response.data;
+};
+
+// 我的消费申请列表
+export const getMyConsumes = async (page?: number, size?: number, status?: string): Promise<PageResultConsumeResp> => {
+  const params = new URLSearchParams();
+  if (page) params.append('page', page.toString());
+  if (size) params.append('size', size.toString());
+  if (status) params.append('status', status);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const response = await apiClient.get<PageResultConsumeResp>(`/api/h5/consume-applies/my${query}`);
+  return response.data;
+};
+
+// ==================== 门店相关 ====================
+
+// 门店列表（仅 id 和名称）
+export const getStoreList = async (): Promise<ResultListStoreSimpleResp> => {
+  const response = await apiClient.get<ResultListStoreSimpleResp>('/api/h5/stores');
+  return response.data;
+};
+
+// ==================== 排房情况 ====================
+
+// 排房情况
+export const getRoomSchedule = async (params: { storeId?: number; startDate: string; endDate: string }): Promise<ResultRoomScheduleResp> => {
+  const queryParams = new URLSearchParams();
+  if (params.storeId) queryParams.append('storeId', params.storeId.toString());
+  queryParams.append('startDate', params.startDate);
+  queryParams.append('endDate', params.endDate);
+  const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  const response = await apiClient.get<ResultRoomScheduleResp>(`/api/h5/room-schedules${query}`);
+  return response.data;
+};
+
+// ==================== 文件上传 ====================
+
+// 通用文件上传
+export const uploadFile = async (file: File): Promise<ResultString> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await apiClient.post<ResultString>('/api/h5/oss/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};

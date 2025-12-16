@@ -9,8 +9,12 @@ import { useData } from '@/contexts/DataContext';
 
 export default function ConsumptionRequestList() {
   const { user } = useAuth();
-  const { getConsumptionRequestsBySales } = useData();
+  const { getConsumptionRequestsBySales, fetchMyRequests } = useData();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    fetchMyRequests();
+  }, [fetchMyRequests]);
 
   const requests = getConsumptionRequestsBySales(user?.staffNo || '');
   const sortedRequests = [...requests].sort(

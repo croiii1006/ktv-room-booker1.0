@@ -7,8 +7,12 @@ import { useData } from '@/contexts/DataContext';
 
 export default function RechargeApproval() {
   const { user } = useAuth();
-  const { getPendingRechargeRequests } = useData();
+  const { getPendingRechargeRequests, fetchPendingRequests } = useData();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    fetchPendingRequests();
+  }, [fetchPendingRequests]);
 
   const pendingRequests = getPendingRechargeRequests(user?.staffNo || '');
   const sortedRequests = [...pendingRequests].sort(

@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button';
 export default function RoomMatrix() {
   const location = useLocation();
   const { user } = useAuth();
-  const { stores, getRoomsByStore, getBookingByRoomAndDate } = useData();
+  const { stores, getRoomsByStore, getBookingByRoomAndDate, fetchRoomSchedule } = useData();
   const [selectedCell, setSelectedCell] = useState<{ roomId: string; date: string } | null>(null);
   const [viewBookingId, setViewBookingId] = useState<string | null>(null);
   const [selectedStoreId, setSelectedStoreId] = useState(stores[0]?.id || 'store1');
@@ -35,6 +35,16 @@ export default function RoomMatrix() {
   const today = new Date();
   const startDate = addWeeks(today, weekOffset);
   const dates = Array.from({ length: 7 }, (_, i) => addDays(startDate, i));
+  const endDate = dates[dates.length - 1];
+
+  // Fetch room schedule when store or dates change
+  React.useEffect(() => {
+    if (selectedStoreId) {
+      const startStr = format(startDate, 'yyyy-MM-dd');
+      const endStr = format(endDate, 'yyyy-MM-dd');
+      fetchRoomSchedule(selectedStoreId, startStr, endStr);
+    }
+  }, [selectedStoreId, weekOffset, fetchRoomSchedule]);
 
   // Max 8 weeks (2 months) into the future
   const maxWeekOffset = 8;

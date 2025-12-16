@@ -9,8 +9,12 @@ import { useData } from '@/contexts/DataContext';
 
 export default function RechargeRequestList() {
   const { user } = useAuth();
-  const { getRechargeRequestsBySales } = useData();
+  const { getRechargeRequestsBySales, fetchMyRequests } = useData();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    fetchMyRequests();
+  }, [fetchMyRequests]);
 
   const requests = getRechargeRequestsBySales(user?.staffNo || '');
   const sortedRequests = [...requests].sort(

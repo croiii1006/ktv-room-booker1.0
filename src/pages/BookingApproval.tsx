@@ -9,8 +9,12 @@ import { useData } from '@/contexts/DataContext';
 
 export default function BookingApproval() {
   const { user } = useAuth();
-  const { getPendingBookings, rooms } = useData();
+  const { getPendingBookings, rooms, fetchPendingRequests } = useData();
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    fetchPendingRequests();
+  }, [fetchPendingRequests]);
 
   const pendingOrders = getPendingBookings(user?.staffNo);
   const sortedOrders = [...pendingOrders].sort(

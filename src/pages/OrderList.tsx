@@ -9,8 +9,12 @@ import { useData } from '@/contexts/DataContext';
 
 export default function OrderList() {
   const { user } = useAuth();
-  const { getBookingsByStaff, rooms } = useData();
+  const { getBookingsByStaff, rooms, fetchMyRequests } = useData();
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    fetchMyRequests();
+  }, [fetchMyRequests]);
 
   const orders = user ? getBookingsByStaff(user.staffNo) : [];
   const sortedOrders = [...orders].sort(

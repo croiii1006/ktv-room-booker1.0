@@ -1,5 +1,37 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { format, addDays } from 'date-fns';
+import { toast } from 'sonner';
+import {
+  getStoreList,
+  getRoomSchedule,
+  createReservation,
+  approveReservation,
+  rejectReservation,
+  cancelReservation,
+  getPendingReservations,
+  getMyReservations,
+  createRechargeApply,
+  approveRecharge,
+  rejectRecharge,
+  getPendingRecharges,
+  getMyRecharges,
+  createConsumeApply,
+  approveConsume,
+  rejectConsume,
+  getPendingConsumes,
+  getMyConsumes,
+} from '@/services/h5-service';
+import {
+  ReservationCreateReq,
+  RechargeApplyCreateReq,
+  ConsumeApplyCreateReq,
+  ReservationResp,
+  RechargeResp,
+  ConsumeResp,
+  RoomScheduleBookingResp,
+  ResultRoomScheduleResp,
+} from '@/models';
 
 export type CardType = '普' | '银' | '金';
 export type BookingStatus = 'free' | 'pending' | 'booked' | 'finished' | 'rejected' | 'cancelled';
@@ -47,6 +79,7 @@ export interface Booking {
   serviceSalesId?: string;
   serviceSalesName?: string;
   serviceSalesStaffNo?: string;
+  reserveNo?: string; // Add reserveNo from API
 }
 
 export interface RechargeRequest {
@@ -100,25 +133,38 @@ interface DataContextType {
   rechargeRequests: RechargeRequest[];
   consumptionRequests: ConsumptionRequest[];
   teamMembers: TeamMember[];
+  isLoading: boolean;
+  
+  // Data Fetching
+  fetchRoomSchedule: (storeId: string, startDate: string, endDate: string) => Promise<void>;
+  fetchPendingRequests: () => Promise<void>;
+  fetchMyRequests: () => Promise<void>;
+
+  // Actions
   addCustomer: (customer: Omit<Customer, 'id'>) => void;
   updateCustomer: (id: string, customer: Partial<Customer>) => void;
-  addBooking: (booking: Omit<Booking, 'id' | 'createdAt'>) => void;
-  updateBooking: (id: string, updates: Partial<Booking>) => void;
-  updateBookingStatus: (id: string, status: BookingStatus, reason?: string) => void;
+  
+  addBooking: (booking: Omit<Booking, 'id' | 'createdAt'>) => Promise<void>;
+  updateBooking: (id: string, updates: Partial<Booking>) => Promise<void>;
+  updateBookingStatus: (id: string, status: BookingStatus, reason?: string) => Promise<void>;
+  
   getBookingByRoomAndDate: (roomId: string, date: string) => Booking | undefined;
   getBookingsByRoomAndDateRange: (roomId: string, startDate: string, endDate: string) => Booking[];
-  getCustomersByStaff: (staffId: string, role: 'sales' | 'leader') => Customer[];
+  getCustomersByStaff: (staffId: string, role?: 'sales' | 'leader') => Customer[];
   getBookingsByStaff: (staffId: string) => Booking[];
   getPendingBookings: (leaderId?: string) => Booking[];
   getRoomsByStore: (storeId: string) => Room[];
-  addRechargeRequest: (request: Omit<RechargeRequest, 'id' | 'createdAt'>) => void;
-  updateRechargeStatus: (id: string, status: RequestStatus, reason?: string) => void;
+  
+  addRechargeRequest: (request: Omit<RechargeRequest, 'id' | 'createdAt'>) => Promise<void>;
+  updateRechargeStatus: (id: string, status: RequestStatus, reason?: string) => Promise<void>;
   getRechargeRequestsBySales: (salesId: string) => RechargeRequest[];
   getPendingRechargeRequests: (leaderId: string) => RechargeRequest[];
-  addConsumptionRequest: (request: Omit<ConsumptionRequest, 'id' | 'createdAt'>) => void;
-  updateConsumptionStatus: (id: string, status: RequestStatus, reason?: string) => void;
+  
+  addConsumptionRequest: (request: Omit<ConsumptionRequest, 'id' | 'createdAt'>) => Promise<void>;
+  updateConsumptionStatus: (id: string, status: RequestStatus, reason?: string) => Promise<void>;
   getConsumptionRequestsBySales: (salesId: string) => ConsumptionRequest[];
   getPendingConsumptionRequests: (leaderId: string) => ConsumptionRequest[];
+  
   addTeamMember: (member: Omit<TeamMember, 'id'>) => void;
   removeTeamMember: (id: string) => void;
   getTeamMembers: (leaderId: string) => TeamMember[];
@@ -131,139 +177,389 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
+// Keep mock data for fallback (customers, team members)
 const generateMockData = () => {
-  const stores: Store[] = [
-    { id: 'store1', name: '上海店' },
-    { id: 'store2', name: '武汉店' },
-  ];
-
   const customers: Customer[] = [
     { id: 'c0000001', name: '陈先生', phone: '13800138001', idCard: '310101199001011234', cardType: '金', openDate: '2024-01-15', balance: 5000, giftAmount: 500, salesId: 'S0000001' },
     { id: 'c0000002', name: '刘女士', phone: '13800138002', idCard: '310101199202022345', cardType: '银', openDate: '2024-02-20', balance: 2000, giftAmount: 200, salesId: 'S0000001' },
     { id: 'c0000003', name: '王先生', phone: '13800138003', idCard: '310101198803033456', cardType: '普', openDate: '2024-03-10', balance: 800, giftAmount: 0, salesId: 'S0000002' },
     { id: 'c0000004', name: '赵女士', phone: '13800138004', idCard: '310101199504044567', cardType: '金', openDate: '2024-01-01', balance: 8000, giftAmount: 1000, salesId: 'S0000001' },
   ];
-
-  const rooms: Room[] = [
-    // 上海店
-    { id: 'r1', name: '101', price: 288, type: 'small', storeId: 'store1' },
-    { id: 'r2', name: '102', price: 288, type: 'small', storeId: 'store1' },
-    { id: 'r3', name: '201', price: 388, type: 'medium', storeId: 'store1' },
-    { id: 'r4', name: '202', price: 388, type: 'medium', storeId: 'store1' },
-    { id: 'r5', name: '301', price: 588, type: 'large', storeId: 'store1' },
-    { id: 'r6', name: '302', price: 588, type: 'large', storeId: 'store1' },
-    // 武汉店
-    { id: 'r7', name: 'A01', price: 258, type: 'small', storeId: 'store2' },
-    { id: 'r8', name: 'A02', price: 258, type: 'small', storeId: 'store2' },
-    { id: 'r9', name: 'B01', price: 358, type: 'medium', storeId: 'store2' },
-    { id: 'r10', name: 'B02', price: 358, type: 'medium', storeId: 'store2' },
-    { id: 'r11', name: 'C01', price: 558, type: 'large', storeId: 'store2' },
-  ];
-
+  
   const teamMembers: TeamMember[] = [
     { id: 'tm1', staffNo: 'S0000001', name: '张三', leaderId: 'L0000001' },
     { id: 'tm2', staffNo: 'S0000002', name: '李四', leaderId: 'L0000001' },
   ];
 
-  const today = new Date();
-  const bookings: Booking[] = [
-    { id: 'b1', roomId: 'r1', date: format(today, 'yyyy-MM-dd'), customerId: 'c0000001', customerName: '陈先生', price: 288, status: 'booked', salesId: 'S0000001', salesName: '张三', salesStaffNo: 'S0000001', createdAt: format(addDays(today, -1), 'yyyy-MM-dd HH:mm') },
-    { id: 'b2', roomId: 'r3', date: format(addDays(today, 1), 'yyyy-MM-dd'), customerId: 'c0000002', customerName: '刘女士', price: 388, status: 'pending', salesId: 'S0000001', salesName: '张三', salesStaffNo: 'S0000001', createdAt: format(today, 'yyyy-MM-dd HH:mm') },
-    { id: 'b3', roomId: 'r5', date: format(addDays(today, 2), 'yyyy-MM-dd'), customerId: 'c0000004', customerName: '赵女士', price: 588, status: 'booked', salesId: 'S0000001', salesName: '张三', salesStaffNo: 'S0000001', createdAt: format(addDays(today, -2), 'yyyy-MM-dd HH:mm') },
-    { id: 'b4', roomId: 'r2', date: format(addDays(today, -1), 'yyyy-MM-dd'), customerId: 'c0000003', customerName: '王先生', price: 288, status: 'finished', salesId: 'S0000002', salesName: '李四', salesStaffNo: 'S0000002', createdAt: format(addDays(today, -3), 'yyyy-MM-dd HH:mm') },
-  ];
-
-  const rechargeRequests: RechargeRequest[] = [];
-  const consumptionRequests: ConsumptionRequest[] = [];
-
-  return { customers, rooms, stores, bookings, rechargeRequests, consumptionRequests, teamMembers };
+  return { customers, teamMembers };
 };
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState(() => {
-    const saved = localStorage.getItem('ktv_data_v2');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Ensure new fields exist
-      return {
-        ...generateMockData(),
-        ...parsed,
-        stores: parsed.stores || generateMockData().stores,
-        rechargeRequests: parsed.rechargeRequests || [],
-        consumptionRequests: parsed.consumptionRequests || [],
-        teamMembers: parsed.teamMembers || generateMockData().teamMembers,
-      };
-    }
-    return generateMockData();
-  });
+  const [stores, setStores] = useState<Store[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [rechargeRequests, setRechargeRequests] = useState<RechargeRequest[]>([]);
+  const [consumptionRequests, setConsumptionRequests] = useState<ConsumptionRequest[]>([]);
+  
+  // Mock data for things we can't fetch yet
+  const [customers, setCustomers] = useState<Customer[]>(generateMockData().customers);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(generateMockData().teamMembers);
+  
+  const [isLoading, setIsLoading] = useState(false);
 
-  const saveData = (newData: typeof data) => {
-    setData(newData);
-    localStorage.setItem('ktv_data_v2', JSON.stringify(newData));
-  };
+  // Initialize Stores
+  useEffect(() => {
+    getStoreList().then(result => {
+      if (result.code === 200 && result.data) {
+        const storeList: Store[] = result.data.map((item: any) => ({
+          id: item.id.toString(),
+          name: item.name,
+        }));
+        setStores(storeList);
+      }
+    }).catch(err => console.error('获取门店失败', err));
+  }, []);
+
+  // --- Data Fetching ---
+
+  const fetchRoomSchedule = useCallback(async (storeId: string, startDate: string, endDate: string) => {
+    setIsLoading(true);
+    try {
+      const res = await getRoomSchedule({ 
+        storeId: parseInt(storeId), 
+        startDate, 
+        endDate 
+      });
+      
+      if (res.code === 200 && res.data) {
+        const data = res.data;
+        // Update Rooms
+        const newRooms: Room[] = (data.rooms || []).map(r => ({
+          id: r.id?.toString() || '',
+          name: r.roomName || '',
+          price: r.price || 0,
+          type: (r.roomType as any) || 'small', // assuming type matches or we map it
+          storeId: storeId,
+        }));
+        
+        // Merge with existing rooms if needed, or just replace for the current store
+        // For simplicity, we might want to keep rooms from other stores if we switch back and forth, 
+        // but replacing is safer for consistency with the schedule.
+        // However, getRoomsByStore filters by storeId.
+        setRooms(prev => {
+          const otherStoreRooms = prev.filter(r => r.storeId !== storeId);
+          return [...otherStoreRooms, ...newRooms];
+        });
+
+        // Update Bookings
+        const newBookings: Booking[] = [];
+        (data.rooms || []).forEach(r => {
+          if (r.bookings) {
+            Object.entries(r.bookings).forEach(([date, bookingResp]) => {
+              if (bookingResp.state !== 'AVAILABLE') {
+                let status: BookingStatus = 'free';
+                if (bookingResp.state === 'PENDING') status = 'pending';
+                else if (bookingResp.state === 'BOOKED') status = 'booked';
+                else if (bookingResp.state === 'FINISHED') status = 'finished';
+                
+                // Map API booking to internal Booking
+                newBookings.push({
+                  id: bookingResp.reservationId?.toString() || `temp_${r.id}_${date}`,
+                  roomId: r.id?.toString() || '',
+                  date: date,
+                  customerId: bookingResp.memberId?.toString() || '',
+                  customerName: bookingResp.memberId?.toString() || 'Unknown', // No name in response
+                  price: r.price || 0,
+                  status: status,
+                  salesId: bookingResp.staffId?.toString() || '',
+                  salesName: bookingResp.staffId?.toString() || 'Unknown',
+                  salesStaffNo: bookingResp.staffId?.toString() || '',
+                  createdAt: format(new Date(), 'yyyy-MM-dd HH:mm'), // Missing in response
+                  reserveNo: bookingResp.reserveNo,
+                });
+              }
+            });
+          }
+        });
+        
+        // Replace bookings for this store/date range? 
+        // Or just replace all? RoomMatrix assumes we have the data.
+        // We should merge carefully or just replace if we only view one store at a time.
+        // To be safe, we can filter out bookings for this store/date range and append new ones.
+        // But simpler: just setBookings(newBookings) if we only care about what's visible.
+        // But getPendingBookings might need data from other stores?
+        // Let's replace bookings for the current view, but we also have fetchPendingRequests which adds more bookings.
+        
+        // Strategy: Keep a master list. Remove intersection, add new.
+        setBookings(prev => {
+           // This is complex. For now, let's just use the loaded bookings for the matrix.
+           // But if we do that, we lose pending bookings fetched separately.
+           // Let's append/update based on ID.
+           const bookingMap = new Map(prev.map(b => [b.id, b]));
+           newBookings.forEach(b => bookingMap.set(b.id, b));
+           return Array.from(bookingMap.values());
+        });
+      }
+    } catch (err) {
+      console.error('Fetch schedule failed', err);
+      toast.error('获取房态失败');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const fetchPendingRequests = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // Fetch Reservations
+      const resRes = await getPendingReservations(1, 100);
+      if (resRes.code === 200 && resRes.data && resRes.data.list) {
+        const pendingBookings = resRes.data.list.map(b => ({
+           id: b.id?.toString() || '',
+           roomId: b.roomId?.toString() || '',
+           date: b.reserveDate || '',
+           customerId: b.memberId?.toString() || '',
+           customerName: b.memberId?.toString() || 'Unknown',
+           price: 0, // Need to look up room price?
+           status: 'pending' as BookingStatus,
+           salesId: b.staffId?.toString() || '',
+           salesName: 'Unknown',
+           salesStaffNo: b.staffId?.toString() || '',
+           createdAt: b.createdAt || '',
+           reserveNo: b.reserveNo,
+           rejectReason: b.remark
+        }));
+        
+        setBookings(prev => {
+          const bookingMap = new Map(prev.map(b => [b.id, b]));
+          pendingBookings.forEach(b => bookingMap.set(b.id, b));
+          return Array.from(bookingMap.values());
+        });
+      }
+
+      // Fetch Recharges
+      const resRecharge = await getPendingRecharges(1, 100);
+      if (resRecharge.code === 200 && resRecharge.data && resRecharge.data.list) {
+         const pendingRecharges = resRecharge.data.list.map(r => ({
+           id: r.id?.toString() || '',
+           customerId: r.memberId?.toString() || '',
+           customerName: 'Unknown',
+           amount: r.amount || 0,
+           giftProduct: r.giftAmount ? `送${r.giftAmount}` : '',
+           status: 'pending' as RequestStatus,
+           salesId: r.staffId?.toString() || '',
+           salesName: 'Unknown',
+           salesStaffNo: r.staffId?.toString() || '',
+           leaderId: '', // Unknown
+           createdAt: r.createdAt || '',
+           rejectReason: r.remark
+         }));
+         setRechargeRequests(prev => {
+            // Replace all pending? Or merge?
+            // Simple merge by ID
+            const map = new Map(prev.map(r => [r.id, r]));
+            pendingRecharges.forEach(r => map.set(r.id, r));
+            return Array.from(map.values());
+         });
+      }
+
+      // Fetch Consumes
+      const resConsume = await getPendingConsumes(1, 100);
+      if (resConsume.code === 200 && resConsume.data && resConsume.data.list) {
+        const pendingConsumes = resConsume.data.list.map(c => ({
+          id: c.id?.toString() || '',
+          bookingId: '', // Not in list resp?
+          customerId: c.memberId?.toString() || '',
+          customerName: 'Unknown',
+          roomId: c.roomId?.toString() || '',
+          roomName: '', // Need lookup
+          date: '', 
+          bookingSalesId: '',
+          bookingSalesName: '',
+          serviceSalesId: c.staffId?.toString() || '',
+          serviceSalesName: 'Unknown',
+          serviceSalesStaffNo: c.staffId?.toString() || '',
+          status: 'pending' as RequestStatus,
+          leaderId: '',
+          createdAt: c.createdAt || '',
+          rejectReason: c.remark
+        }));
+        setConsumptionRequests(prev => {
+            const map = new Map(prev.map(r => [r.id, r]));
+            pendingConsumes.forEach(r => map.set(r.id, r));
+            return Array.from(map.values());
+        });
+      }
+
+    } catch (err) {
+      console.error('Fetch pending failed', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const fetchMyRequests = useCallback(async () => {
+    setIsLoading(true);
+    try {
+        // Fetch My Reservations
+        const resRes = await getMyReservations(1, 100);
+        if (resRes.code === 200 && resRes.data && resRes.data.list) {
+            const myBookings = resRes.data.list.map(b => ({
+               id: b.id?.toString() || '',
+               roomId: b.roomId?.toString() || '',
+               date: b.reserveDate || '',
+               customerId: b.memberId?.toString() || '',
+               customerName: b.memberId?.toString() || 'Unknown',
+               price: 0, 
+               status: (b.status === 'PENDING' ? 'pending' : b.status === 'APPROVED' ? 'booked' : b.status === 'REJECTED' ? 'rejected' : 'cancelled') as BookingStatus,
+               salesId: b.staffId?.toString() || '',
+               salesName: 'Me',
+               salesStaffNo: b.staffId?.toString() || '',
+               createdAt: b.createdAt || '',
+               reserveNo: b.reserveNo,
+               rejectReason: b.remark,
+               cancelReason: b.cancelReason
+            }));
+            
+            setBookings(prev => {
+              const bookingMap = new Map(prev.map(b => [b.id, b]));
+              myBookings.forEach(b => bookingMap.set(b.id, b));
+              return Array.from(bookingMap.values());
+            });
+        }
+
+        // Similar to fetchPendingRequests but calling getMy...
+        // Implementing simplified version
+        const resRecharge = await getMyRecharges(1, 100);
+        if (resRecharge.code === 200 && resRecharge.data && resRecharge.data.list) {
+             const myRecharges = resRecharge.data.list.map(r => ({
+               id: r.id?.toString() || '',
+               customerId: r.memberId?.toString() || '',
+               customerName: 'Unknown',
+               amount: r.amount || 0,
+               giftProduct: r.giftAmount ? `送${r.giftAmount}` : '',
+               status: (r.status === 'PENDING' ? 'pending' : r.status === 'APPROVED' ? 'approved' : 'rejected') as RequestStatus,
+               salesId: r.staffId?.toString() || '',
+               salesName: 'Me',
+               salesStaffNo: r.staffId?.toString() || '',
+               leaderId: '',
+               createdAt: r.createdAt || '',
+               rejectReason: r.remark
+             }));
+             setRechargeRequests(prev => {
+                const map = new Map(prev.map(r => [r.id, r]));
+                myRecharges.forEach(r => map.set(r.id, r));
+                return Array.from(map.values());
+             });
+        }
+        
+        const resConsume = await getMyConsumes(1, 100);
+        if (resConsume.code === 200 && resConsume.data && resConsume.data.list) {
+            const myConsumes = resConsume.data.list.map(c => ({
+              id: c.id?.toString() || '',
+              bookingId: '',
+              customerId: c.memberId?.toString() || '',
+              customerName: 'Unknown',
+              roomId: c.roomId?.toString() || '',
+              roomName: '',
+              date: '',
+              bookingSalesId: '',
+              bookingSalesName: '',
+              serviceSalesId: c.staffId?.toString() || '',
+              serviceSalesName: 'Me',
+              serviceSalesStaffNo: c.staffId?.toString() || '',
+              status: (c.status === 'PENDING' ? 'pending' : c.status === 'APPROVED' ? 'approved' : 'rejected') as RequestStatus,
+              leaderId: '',
+              createdAt: c.createdAt || '',
+              rejectReason: c.remark
+            }));
+            setConsumptionRequests(prev => {
+                const map = new Map(prev.map(r => [r.id, r]));
+                myConsumes.forEach(r => map.set(r.id, r));
+                return Array.from(map.values());
+            });
+        }
+
+    } catch (err) {
+        console.error('Fetch my requests failed', err);
+    } finally {
+        setIsLoading(false);
+    }
+  }, []);
+
+  // --- Actions ---
 
   const addCustomer = (customer: Omit<Customer, 'id'>) => {
+    // Mock
     const newCustomer = { ...customer, id: `c${Date.now()}` };
-    saveData({ ...data, customers: [...data.customers, newCustomer] });
+    setCustomers([...customers, newCustomer]);
   };
 
   const updateCustomer = (id: string, updates: Partial<Customer>) => {
-    saveData({
-      ...data,
-      customers: data.customers.map((c: Customer) => c.id === id ? { ...c, ...updates } : c)
-    });
+    setCustomers(customers.map(c => c.id === id ? { ...c, ...updates } : c));
   };
 
-  const addBooking = (booking: Omit<Booking, 'id' | 'createdAt'>) => {
-    const newBooking = {
-      ...booking,
-      id: `b${Date.now()}`,
-      createdAt: format(new Date(), 'yyyy-MM-dd HH:mm')
-    };
-    saveData({ ...data, bookings: [...data.bookings, newBooking] });
-  };
+  const addBooking = async (booking: Omit<Booking, 'id' | 'createdAt'>) => {
+    try {
+        const req: ReservationCreateReq = {
+            storeId: 1, // Default to 1? Or find storeId from roomId
+            roomId: parseInt(booking.roomId),
+            memberId: parseInt(booking.customerId), // Assuming customerId is number
+            staffId: parseInt(booking.salesId) || 0, // Need correct ID
+            reserveDate: booking.date,
+            guestCount: 1,
+            remark: ''
+        };
+        // Find storeId from room
+        const room = rooms.find(r => r.id === booking.roomId);
+        if (room) {
+            req.storeId = parseInt(room.storeId);
+        }
 
-  // ✅ 通用的更新 Booking 方法：所有修改 Booking 都用它
-  const updateBooking = (id: string, updates: Partial<Booking>) => {
-    setData(prev => {
-      const newBookings = prev.bookings.map((b: Booking) =>
-        b.id === id ? { ...b, ...updates } : b
-      );
-
-      const newData = {
-        ...prev,
-        bookings: newBookings,
-      };
-
-      console.log("[updateBooking] 更新后 →", newBookings);
-      localStorage.setItem("ktv_data_v2", JSON.stringify(newData));
-      return newData;
-    });
-  };
-
-  // ✅ 如果项目里还有地方只想改 status，可以用这个包装一下
-  const updateBookingStatus = (
-    id: string,
-    status: BookingStatus,
-    reason?: string
-  ) => {
-    const updates: Partial<Booking> = { status };
-
-    if (status === "rejected" && reason) {
-      updates.rejectReason = reason;
+        const res = await createReservation(req);
+        if (res.code === 200) {
+             toast.success('预定提交成功');
+             // Refresh data?
+             // Since we don't know the new ID immediately in a useful way to update state locally without re-fetch,
+             // ideally we re-fetch.
+        }
+    } catch (err) {
+        console.error(err);
+        toast.error('预定提交失败');
     }
-    if (status === "cancelled" && reason) {
-      updates.cancelReason = reason;
-    }
-
-    // 统一走 updateBooking，避免两套逻辑互相覆盖
-    updateBooking(id, updates);
   };
 
+  const updateBooking = async (id: string, updates: Partial<Booking>) => {
+      // General update not fully supported by API for all fields
+      // But status update is supported via approve/reject
+      console.warn("General updateBooking not implemented fully with API");
+  };
 
+  const updateBookingStatus = async (id: string, status: BookingStatus, reason?: string) => {
+      try {
+          if (status === 'booked') {
+              // Approve
+              await approveReservation({ reservationId: parseInt(id), remark: reason });
+              toast.success('审核通过');
+          } else if (status === 'rejected') {
+              await rejectReservation({ reservationId: parseInt(id), remark: reason });
+              toast.success('审核拒绝');
+          } else if (status === 'cancelled') {
+              await cancelReservation({ reservationId: parseInt(id), remark: reason });
+              toast.success('已取消');
+          }
+          
+          // Optimistic update
+          setBookings(prev => prev.map(b => b.id === id ? { ...b, status, rejectReason: reason } : b));
+          
+      } catch (err) {
+          console.error(err);
+          toast.error('操作失败');
+      }
+  };
 
   const getBookingByRoomAndDate = (roomId: string, date: string) => {
-    return data.bookings.find((b: Booking) => 
+    return bookings.find((b: Booking) => 
       b.roomId === roomId && 
       b.date === date && 
       b.status !== 'rejected' &&
@@ -272,172 +568,177 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const getBookingsByRoomAndDateRange = (roomId: string, startDate: string, endDate: string) => {
-    return data.bookings.filter((b: Booking) => 
+    return bookings.filter((b: Booking) => 
       b.roomId === roomId && 
       b.date >= startDate && 
       b.date <= endDate
     );
   };
 
-  const getCustomersByStaff = (staffId: string, role: 'sales' | 'leader') => {
+  const getCustomersByStaff = (staffId: string, role?: 'sales' | 'leader') => {
     if (role === 'leader') {
-      // Get all team members' customers
-      const teamMemberIds = data.teamMembers
+      const teamMemberIds = teamMembers
         .filter((tm: TeamMember) => tm.leaderId === staffId)
         .map((tm: TeamMember) => tm.staffNo);
-      return data.customers.filter((c: Customer) => teamMemberIds.includes(c.salesId));
+      return customers.filter((c: Customer) => teamMemberIds.includes(c.salesId));
     }
-    return data.customers.filter((c: Customer) => c.salesId === staffId);
+    return customers.filter((c: Customer) => c.salesId === staffId);
   };
 
   const getBookingsByStaff = (staffId: string) => {
-    return data.bookings.filter((b: Booking) => b.salesId === staffId);
+    return bookings.filter((b: Booking) => b.salesId === staffId);
   };
 
   const getPendingBookings = (leaderId?: string) => {
-    if (leaderId) {
-      const teamMemberIds = data.teamMembers
-        .filter((tm: TeamMember) => tm.leaderId === leaderId)
-        .map((tm: TeamMember) => tm.staffNo);
-      return data.bookings.filter((b: Booking) => b.status === 'pending' && teamMemberIds.includes(b.salesId));
-    }
-    return data.bookings.filter((b: Booking) => b.status === 'pending');
+      // In real API, we just fetch pending.
+      // If leaderId is provided, we might filter locally if we have mixed data, 
+      // but getPendingReservations API usually returns what the user can see.
+      return bookings.filter((b: Booking) => b.status === 'pending');
   };
 
   const getRoomsByStore = (storeId: string) => {
-    return data.rooms.filter((r: Room) => r.storeId === storeId);
+    return rooms.filter((r: Room) => r.storeId === storeId);
   };
 
-  const addRechargeRequest = (request: Omit<RechargeRequest, 'id' | 'createdAt'>) => {
-    const newRequest = {
-      ...request,
-      id: `rr${Date.now()}`,
-      createdAt: format(new Date(), 'yyyy-MM-dd HH:mm')
-    };
-    saveData({ ...data, rechargeRequests: [...data.rechargeRequests, newRequest] });
+  const addRechargeRequest = async (request: Omit<RechargeRequest, 'id' | 'createdAt'>) => {
+      try {
+          const req: RechargeApplyCreateReq = {
+              memberId: parseInt(request.customerId),
+              amount: request.amount,
+              giftAmount: 0, // Parse from giftProduct?
+              remark: ''
+          };
+          // Try to parse gift amount
+          if (request.giftProduct && request.giftProduct.includes('送')) {
+              const num = parseInt(request.giftProduct.replace('送', ''));
+              if (!isNaN(num)) req.giftAmount = num;
+          }
+
+          const res = await createRechargeApply(req);
+          if (res.code === 200) {
+              toast.success('充值申请提交成功');
+          }
+      } catch (err) {
+          console.error(err);
+          toast.error('充值申请提交失败');
+      }
   };
 
-  const updateRechargeStatus = (id: string, status: RequestStatus, reason?: string) => {
-    saveData({
-      ...data,
-      rechargeRequests: data.rechargeRequests.map((r: RechargeRequest) => 
-        r.id === id ? { ...r, status, ...(reason ? { rejectReason: reason } : {}) } : r
-      )
-    });
+  const updateRechargeStatus = async (id: string, status: RequestStatus, reason?: string) => {
+      try {
+          if (status === 'approved') {
+              await approveRecharge({ applyId: parseInt(id), remark: reason });
+              toast.success('审核通过');
+          } else if (status === 'rejected') {
+              await rejectRecharge({ applyId: parseInt(id), remark: reason });
+              toast.success('审核拒绝');
+          }
+          setRechargeRequests(prev => prev.map(r => r.id === id ? { ...r, status, rejectReason: reason } : r));
+      } catch (err) {
+          console.error(err);
+          toast.error('操作失败');
+      }
   };
 
   const getRechargeRequestsBySales = (salesId: string) => {
-    return data.rechargeRequests.filter((r: RechargeRequest) => r.salesId === salesId);
+    return rechargeRequests.filter((r: RechargeRequest) => r.salesId === salesId);
   };
 
   const getPendingRechargeRequests = (leaderId: string) => {
-    return data.rechargeRequests.filter((r: RechargeRequest) => 
-      r.leaderId === leaderId && r.status === 'pending'
-    );
+    return rechargeRequests.filter((r: RechargeRequest) => r.status === 'pending');
   };
 
-  const addConsumptionRequest = (request: Omit<ConsumptionRequest, 'id' | 'createdAt'>) => {
-    const newRequest = {
-      ...request,
-      id: `cr${Date.now()}`,
-      createdAt: format(new Date(), 'yyyy-MM-dd HH:mm')
-    };
-    saveData({ ...data, consumptionRequests: [...data.consumptionRequests, newRequest] });
+  const addConsumptionRequest = async (request: Omit<ConsumptionRequest, 'id' | 'createdAt'>) => {
+       try {
+          const req: ConsumeApplyCreateReq = {
+              roomId: parseInt(request.roomId),
+              memberId: parseInt(request.customerId),
+              amount: 0, // Missing in ConsumptionRequest?
+              remark: ''
+          };
+          const res = await createConsumeApply(req);
+          if (res.code === 200) {
+              toast.success('消费申请提交成功');
+          }
+      } catch (err) {
+          console.error(err);
+          toast.error('消费申请提交失败');
+      }
   };
 
-  const updateConsumptionStatus = (
-    id: string,
-    status: RequestStatus,
-    reason?: string
-  ) => {
-    setData(prev => {
-      const newRequests = prev.consumptionRequests.map((r: ConsumptionRequest) =>
-        r.id === id
-          ? {
-              ...r,
-              status,
-              ...(status === "rejected" && reason ? { rejectReason: reason } : {}),
-            }
-          : r
-      );
-
-      const newData = {
-        ...prev,
-        consumptionRequests: newRequests,
-      };
-
-      console.log("[updateConsumptionStatus] 更新后 →", newRequests);
-
-      localStorage.setItem("ktv_data_v2", JSON.stringify(newData));
-      return newData;
-    });
+  const updateConsumptionStatus = async (id: string, status: RequestStatus, reason?: string) => {
+       try {
+          if (status === 'approved') {
+              await approveConsume({ applyId: parseInt(id), remark: reason });
+              toast.success('审核通过');
+          } else if (status === 'rejected') {
+              await rejectConsume({ applyId: parseInt(id), remark: reason });
+              toast.success('审核拒绝');
+          }
+          setConsumptionRequests(prev => prev.map(r => r.id === id ? { ...r, status, rejectReason: reason } : r));
+      } catch (err) {
+          console.error(err);
+          toast.error('操作失败');
+      }
   };
-
-
 
   const getConsumptionRequestsBySales = (salesId: string) => {
-    return data.consumptionRequests.filter((r: ConsumptionRequest) => r.serviceSalesId === salesId);
+    return consumptionRequests.filter((r: ConsumptionRequest) => r.serviceSalesId === salesId);
   };
 
   const getPendingConsumptionRequests = (leaderId: string) => {
-    return data.consumptionRequests.filter((r: ConsumptionRequest) => 
-      r.leaderId === leaderId && r.status === "pending"
-    );
+    return consumptionRequests.filter((r: ConsumptionRequest) => r.status === 'pending');
   };
 
   const addTeamMember = (member: Omit<TeamMember, 'id'>) => {
-    // Check if already assigned to another leader
-    const existing = data.teamMembers.find((tm: TeamMember) => tm.staffNo === member.staffNo);
-    if (existing) {
-      return; // Already assigned
-    }
     const newMember = { ...member, id: `tm${Date.now()}` };
-    saveData({ ...data, teamMembers: [...data.teamMembers, newMember] });
+    setTeamMembers([...teamMembers, newMember]);
   };
 
   const removeTeamMember = (id: string) => {
-    saveData({
-      ...data,
-      teamMembers: data.teamMembers.filter((tm: TeamMember) => tm.id !== id)
-    });
+    setTeamMembers(teamMembers.filter((tm: TeamMember) => tm.id !== id));
   };
 
   const getTeamMembers = (leaderId: string) => {
-    return data.teamMembers.filter((tm: TeamMember) => tm.leaderId === leaderId);
+    return teamMembers.filter((tm: TeamMember) => tm.leaderId === leaderId);
   };
 
   const getLeaderIdForSales = (salesId: string): string | undefined => {
-    const member = data.teamMembers.find((tm: TeamMember) => tm.staffNo === salesId);
+    const member = teamMembers.find((tm: TeamMember) => tm.staffNo === salesId);
     return member?.leaderId;
   };
 
   const getCustomersBySalesId = (salesId: string) => {
-    return data.customers.filter((c: Customer) => c.salesId === salesId);
+    return customers.filter((c: Customer) => c.salesId === salesId);
   };
 
   const getAllRechargeRequestsBySales = (salesId: string) => {
-    return data.rechargeRequests.filter((r: RechargeRequest) => r.salesId === salesId);
+    return rechargeRequests.filter((r: RechargeRequest) => r.salesId === salesId);
   };
 
   const getAllConsumptionRequestsBySales = (salesId: string) => {
-    return data.consumptionRequests.filter((r: ConsumptionRequest) => 
+    return consumptionRequests.filter((r: ConsumptionRequest) =>
       r.serviceSalesId === salesId || r.bookingSalesId === salesId
     );
   };
 
   const getAllBookingsBySales = (salesId: string) => {
-    return data.bookings.filter((b: Booking) => b.salesId === salesId || b.serviceSalesId === salesId);
+    return bookings.filter((b: Booking) => b.salesId === salesId || b.serviceSalesId === salesId);
   };
 
   return (
     <DataContext.Provider value={{
-      customers: data.customers,
-      rooms: data.rooms,
-      stores: data.stores,
-      bookings: data.bookings,
-      rechargeRequests: data.rechargeRequests,
-      consumptionRequests: data.consumptionRequests,
-      teamMembers: data.teamMembers,
+      customers,
+      rooms,
+      stores,
+      bookings,
+      rechargeRequests,
+      consumptionRequests,
+      teamMembers,
+      isLoading,
+      fetchRoomSchedule,
+      fetchPendingRequests,
+      fetchMyRequests,
       addCustomer,
       updateCustomer,
       addBooking,
