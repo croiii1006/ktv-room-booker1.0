@@ -9,14 +9,14 @@ import { useData } from '@/contexts/DataContext';
 
 export default function OrderList() {
   const { user } = useAuth();
-  const { getBookingsByStaff, rooms, fetchMyRequests } = useData();
+  const { getBookingsByStaff, rooms, customers, fetchMyRequests } = useData();
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   React.useEffect(() => {
     fetchMyRequests();
   }, [fetchMyRequests]);
 
-  const orders = user ? getBookingsByStaff(user.staffNo) : [];
+  const orders = user ? getBookingsByStaff(user.id.toString() || user.staffNo) : [];
   const sortedOrders = [...orders].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
@@ -33,9 +33,19 @@ export default function OrderList() {
         ) : (
           sortedOrders.map((order) => {
             const room = rooms.find((r) => r.id === order.roomId);
+            const roomDisplay = room 
+                ? `${room.roomNo} - ${room.name}` 
+                : (order.roomId || '未知房间');
             const formattedDate = format(new Date(order.date), 'MM/dd EEEE', {
               locale: zhCN,
             });
+
+            // Resolve Customer Name
+            let customerName = order.customerName;
+            if (!customerName || customerName === 'Unknown' || customerName === order.customerId) {
+                const customer = customers.find(c => c.id === order.customerId);
+                if (customer) customerName = customer.name;
+            }
 
             return (
               <div
@@ -46,7 +56,7 @@ export default function OrderList() {
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <h3 className="font-semibold text-foreground">
-                      {room?.name}房 - {order.customerName}
+                      {roomDisplay} - {customerName}
                     </h3>
                     <p className="text-sm text-muted-foreground mt-0.5">
                       {formattedDate}

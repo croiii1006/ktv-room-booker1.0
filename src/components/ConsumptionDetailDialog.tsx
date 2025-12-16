@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import {
@@ -28,6 +28,7 @@ export function ConsumptionDetailDialog({
 }: ConsumptionDetailDialogProps) {
   const {
     consumptionRequests,
+    rooms,
     updateConsumptionStatus,
     updateBooking,            // ✅ 改这里：使用 updateBooking
   } = useData();
@@ -37,6 +38,10 @@ export function ConsumptionDetailDialog({
 
   // 先找到请求
   const request = consumptionRequests.find((r) => r.id === requestId);
+  const room = request ? rooms.find(r => r.id === request.roomId) : null;
+  const displayRoomName = room 
+      ? `${room.roomNo} - ${room.name}` 
+      : (request?.roomName || request?.roomId || '未知房间');
 
   const isPending = request?.status === "pending";
   const isRejected = request?.status === "rejected";
@@ -124,7 +129,7 @@ export function ConsumptionDetailDialog({
           <div className="bg-secondary/50 rounded-lg p-4 space-y-3">
             <div className="flex justify-between">
               <span className="text-muted-foreground">房号</span>
-              <span className="font-medium">{request.roomName}</span>
+              <span className="font-medium">{displayRoomName}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">日期</span>

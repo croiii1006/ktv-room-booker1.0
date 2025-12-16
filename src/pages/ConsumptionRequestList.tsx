@@ -9,14 +9,14 @@ import { useData } from '@/contexts/DataContext';
 
 export default function ConsumptionRequestList() {
   const { user } = useAuth();
-  const { getConsumptionRequestsBySales, fetchMyRequests } = useData();
+  const { getConsumptionRequestsBySales, fetchMyRequests, rooms } = useData();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   React.useEffect(() => {
     fetchMyRequests();
   }, [fetchMyRequests]);
 
-  const requests = getConsumptionRequestsBySales(user?.staffNo || '');
+  const requests = getConsumptionRequestsBySales(user?.id.toString() || user?.staffNo || '');
   const sortedRequests = [...requests].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
@@ -31,7 +31,13 @@ export default function ConsumptionRequestList() {
             <p className="text-muted-foreground">暂无消费确认申请记录</p>
           </div>
         ) : (
-          sortedRequests.map((request) => (
+          sortedRequests.map((request) => {
+            const room = rooms.find(r => r.id === request.roomId);
+            const roomDisplay = room 
+                ? `${room.roomNo} - ${room.name}` 
+                : (request.roomName || request.roomId || '未知房间');
+            
+            return (
             <div
               key={request.id}
               onClick={() => setSelectedId(request.id)}
@@ -40,7 +46,7 @@ export default function ConsumptionRequestList() {
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <h3 className="font-semibold text-foreground">
-                    {request.roomName}房 - {request.customerName}
+                    {roomDisplay} {request.customerName}
                   </h3>
                   <p className="text-sm text-muted-foreground mt-0.5">
                     {format(new Date(request.date), 'MM/dd EEEE', { locale: zhCN })}
@@ -55,7 +61,7 @@ export default function ConsumptionRequestList() {
                 {request.createdAt}
               </div>
             </div>
-          ))
+          )})
         )}
       </main>
 

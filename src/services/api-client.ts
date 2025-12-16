@@ -36,8 +36,17 @@ apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
     // 如果响应数据是 Result 格式，可以根据 code 判断是否成功
     const data = response.data;
-    if (data && typeof data === 'object' && 'success' in data) {
-      if (!data.success) {
+    if (data && typeof data === 'object') {
+       // Check for 401 in business code
+       if (data.code === 401) {
+          toast.error('登录已过期，请重新登录');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+          return Promise.reject(new Error('Unauthorized'));
+       }
+
+       if ('success' in data && !data.success) {
         // 业务错误
         toast.error(data.message || '请求失败');
         return Promise.reject(new Error(data.message));
@@ -56,6 +65,7 @@ apiClient.interceptors.response.use(
         message = '未授权，请重新登录';
         // 可以触发登出逻辑
         localStorage.removeItem('token');
+        localStorage.removeItem('user');
         window.location.href = '/login';
       } else if (status === 403) {
         message = '权限不足';

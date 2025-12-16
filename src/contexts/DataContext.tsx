@@ -61,6 +61,7 @@ export interface Customer {
 export interface Room {
   id: string;
   name: string;
+  roomNo: string;
   price: number;
   type: 'small' | 'medium' | 'large';
   storeId: string;
@@ -125,6 +126,8 @@ export interface ConsumptionRequest {
   leaderId: string;
   createdAt: string;
   rejectReason?: string;
+  storeId?: string;
+  amount?: number;
 }
 
 export interface TeamMember {
@@ -174,7 +177,7 @@ interface DataContextType {
   getRechargeRequestsBySales: (salesId: string) => RechargeRequest[];
   getPendingRechargeRequests: (leaderId: string) => RechargeRequest[];
   
-  addConsumptionRequest: (request: Omit<ConsumptionRequest, 'id' | 'createdAt'>) => Promise<void>;
+  addConsumptionRequest: (request: Omit<ConsumptionRequest, 'id' | 'createdAt'>) => Promise<boolean>;
   updateConsumptionStatus: (id: string, status: RequestStatus, reason?: string) => Promise<void>;
   getConsumptionRequestsBySales: (salesId: string) => ConsumptionRequest[];
   getPendingConsumptionRequests: (leaderId: string) => ConsumptionRequest[];
@@ -238,6 +241,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         fetchTeamMembers();
       }
       fetchMyRequests();
+      
+      // Prefetch room schedule for today to populate room definitions
+      const today = format(new Date(), 'yyyy-MM-dd');
+      fetchRoomSchedule((user.storeId || 1).toString(), today, today);
     }
   }, [user]);
 
@@ -310,6 +317,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const newRooms: Room[] = (data.rooms || []).map(r => ({
           id: r.id?.toString() || '',
           name: r.roomName || '',
+          roomNo: r.roomNo || r.roomName || '', // Fallback to name if no number
           price: r.price || 0,
           type: (r.roomType as any) || 'small', // assuming type matches or we map it
           storeId: storeId,
@@ -352,10 +360,52 @@ export function DataProvider({ children }: { children: ReactNode }) {
         });
         
         setBookings(prev => {
-           const bookingMap = new Map(prev.map(b => [b.id, b]));
-           newBookings.forEach(b => bookingMap.set(b.id, b));
-           return Array.from(bookingMap.values());
-        });
+           // 1. Identify rooms involved in this update (from the current store)
+            const roomIdsInStore = new Set(newRooms.map(r => r.id));
+            
+            const newBookingMap = new Map(newBookings.map(b => [b.id, b]));
+            const resultMap = new Map<string, Booking>();
+            
+            prev.forEach(existing => {
+                const isTargetRoom = roomIdsInStore.has(existing.roomId);
+                const isTargetDate = existing.date >= startDate && existing.date <= endDate;
+                
+                if (isTargetRoom && isTargetDate) {
+                    // This booking is in the range we just refreshed.
+                    // Check if it's still valid (present in new response).
+                    if (newBookingMap.has(existing.id)) {
+                        // It exists. Merge it.
+                        const fresh = newBookingMap.get(existing.id)!;
+                        
+                        const merged = {
+                            ...fresh,
+                            // Preserve nice names if they exist and fresh doesn't have them (or has IDs)
+                            salesName: (existing.salesName && existing.salesName !== 'Unknown' && existing.salesName !== existing.salesId) ? existing.salesName : fresh.salesName,
+                            customerName: (existing.customerName && existing.customerName !== 'Unknown' && existing.customerName !== existing.customerId) ? existing.customerName : fresh.customerName,
+                            rejectReason: fresh.rejectReason || existing.rejectReason
+                        };
+                        resultMap.set(existing.id, merged);
+                        newBookingMap.delete(existing.id); // Mark as handled
+                    } else {
+                        // It's in the range but NOT in the new response.
+                        // It must have been cancelled/removed. Drop it.
+                    }
+                } else {
+                    // Outside of range/store. Keep as is.
+                    // We use resultMap to prevent duplicates if prev already had duplicates
+                    if (!resultMap.has(existing.id)) {
+                         resultMap.set(existing.id, existing);
+                    }
+                }
+            });
+            
+            // Add remaining new bookings (that weren't in prev)
+            newBookingMap.forEach(b => {
+                 resultMap.set(b.id, b);
+            });
+            
+            return Array.from(resultMap.values());
+         });
       }
     } catch (err) {
       console.error('Fetch schedule failed', err);
@@ -389,7 +439,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
         
         setBookings(prev => {
           const bookingMap = new Map(prev.map(b => [b.id, b]));
-          pendingBookings.forEach(b => bookingMap.set(b.id, b));
+          pendingBookings.forEach(b => {
+             const existing = bookingMap.get(b.id);
+             const merged = existing ? {
+                 ...existing,
+                 ...b,
+                 roomId: (b.roomId && b.roomId !== '') ? b.roomId : existing.roomId,
+             } : b;
+             bookingMap.set(b.id, merged);
+          });
           return Array.from(bookingMap.values());
         });
       }
@@ -484,7 +542,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
             
             setBookings(prev => {
               const bookingMap = new Map(prev.map(b => [b.id, b]));
-              myBookings.forEach(b => bookingMap.set(b.id, b));
+              myBookings.forEach(b => {
+                const existing = bookingMap.get(b.id);
+                // Preserve roomId from existing booking if new one is missing
+                // This prevents RoomMatrix items from disappearing if getMyReservations lacks roomId
+                const merged = existing ? {
+                    ...existing,
+                    ...b,
+                    roomId: (b.roomId && b.roomId !== '') ? b.roomId : existing.roomId,
+                    customerName: (b.customerName && b.customerName !== 'Unknown') ? b.customerName : existing.customerName
+                } : b;
+                bookingMap.set(b.id, merged);
+              });
               return Array.from(bookingMap.values());
             });
         }
@@ -679,7 +748,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const getBookingsByStaff = (staffId: string) => {
-    return bookings.filter((b: Booking) => b.salesId === staffId);
+    return bookings.filter((b: Booking) => b.salesId === staffId || b.salesStaffNo === staffId);
   };
 
   const getPendingBookings = (leaderId?: string) => {
@@ -751,21 +820,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return rechargeRequests.filter((r: RechargeRequest) => r.status === 'pending');
   };
 
-  const addConsumptionRequest = async (request: Omit<ConsumptionRequest, 'id' | 'createdAt'>) => {
+  const addConsumptionRequest = async (request: Omit<ConsumptionRequest, 'id' | 'createdAt'>): Promise<boolean> => {
        try {
           const req: ConsumeApplyCreateReq = {
               roomId: parseInt(request.roomId),
               memberId: parseInt(request.customerId),
-              amount: 0, 
+              reservationId: request.bookingId ? parseInt(request.bookingId) : undefined,
+              storeId: request.storeId ? parseInt(request.storeId) : (user?.storeId || 1),
+              applyStaffId: parseInt(request.serviceSalesId),
+              consumeAmount: request.amount || 0,
               remark: ''
           };
           const res = await createConsumeApply(req);
           if (res.code === 200) {
               toast.success('消费申请提交成功');
+              
+              // We need to fetch both room schedule AND my requests to keep everything in sync
+              // fetchMyRequests() updates the status of the booking in "My Bookings"
+              // but might lack full room details.
+              // So we just fetch my requests for now, relying on the robust merge logic we added.
+              fetchMyRequests();
+              return true;
+          } else {
+              toast.error(res.message || '消费申请提交失败');
+              return false;
           }
-      } catch (err) {
+      } catch (err: any) {
           console.error(err);
-          toast.error('消费申请提交失败');
+          toast.error(err.message || '消费申请提交失败');
+          return false;
       }
   };
 

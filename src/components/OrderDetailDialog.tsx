@@ -26,14 +26,46 @@ export function OrderDetailDialog({
   bookingId,
   showActions,
 }: OrderDetailDialogProps) {
-  const { bookings, rooms, updateBookingStatus } = useData();
+  const { bookings, rooms, stores, customers, teamMembers, updateBookingStatus, user } = useData();
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [reason, setReason] = useState('');
+  const [showCancelForm, setShowCancelForm] = useState(false);
 
+  // Ensure we can find the room for display.
+  // If fetchRoomSchedule hasn't been called for this room's date/store, 'room' might be undefined.
+  // However, we can try to fall back to just finding the room by ID in the full list if available,
+  // or show a placeholder name.
   const booking = bookings.find((b) => b.id === bookingId);
   const room = booking ? rooms.find((r) => r.id === booking.roomId) : null;
 
-  if (!booking || !room) return null;
+  if (!booking) return null;
+
+  const roomDisplay = room 
+      ? `${room.roomNo} - ${room.name}` 
+      : (booking.roomId || '未知房间');
+
+  const roomStoreId = room?.storeId || '1'; // Fallback
+  const store = stores.find(s => s.id === roomStoreId);
+  const storeName = store?.name || '未知门店';
+
+  // Find customer name from ID if not present in booking
+  let customerName = booking.customerName;
+  if (!customerName || customerName === 'Unknown' || customerName === booking.customerId) {
+      const customer = customers.find(c => c.id === booking.customerId);
+      if (customer) customerName = customer.name;
+  }
+
+  // Find sales name from ID if not present or is ID
+  let salesName = booking.salesName;
+  if (!salesName || salesName === 'Unknown' || salesName === booking.salesId) {
+      // Try to find in team members if available
+      const staff = teamMembers.find(t => t.id === booking.salesId || t.staffNo === booking.salesStaffNo);
+      if (staff) salesName = staff.name;
+      // If still unknown and it's me
+      else if (user && (user.id.toString() === booking.salesId || user.staffNo === booking.salesStaffNo)) {
+          salesName = user.name;
+      }
+  }
 
   const formattedDate = format(new Date(booking.date), 'yyyy年MM月dd日 EEEE', {
     locale: zhCN,
@@ -57,6 +89,18 @@ export function OrderDetailDialog({
     onClose();
   };
 
+  const handleCancel = () => {
+    if (!reason.trim()) {
+      toast.error('请填写取消理由');
+      return;
+    }
+    updateBookingStatus(bookingId, 'cancelled', reason);
+    toast.success('订单已取消');
+    setShowCancelForm(false);
+    setReason('');
+    onClose();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-sm mx-4 rounded-xl max-h-[90vh] overflow-y-auto">
@@ -71,8 +115,12 @@ export function OrderDetailDialog({
 
           <div className="bg-secondary/50 rounded-lg p-4 space-y-3">
             <div className="flex justify-between">
+              <span className="text-muted-foreground">门店</span>
+              <span className="font-medium">{storeName}</span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-muted-foreground">房号</span>
-              <span className="font-medium">{room.name}</span>
+              <span className="font-medium">{roomDisplay}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">预定日期</span>
@@ -80,7 +128,7 @@ export function OrderDetailDialog({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">客户</span>
-              <span className="font-medium">{booking.customerName}</span>
+              <span className="font-medium">{customerName}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">价格</span>
@@ -89,7 +137,7 @@ export function OrderDetailDialog({
             <div className="flex justify-between">
               <span className="text-muted-foreground">申请人</span>
               <span className="font-medium">
-                {booking.salesName} ({booking.salesStaffNo})
+                {salesName} ({booking.salesStaffNo})
               </span>
             </div>
             <div className="flex justify-between">
@@ -124,9 +172,29 @@ export function OrderDetailDialog({
               </div>
             </div>
           )}
+          {/* Cancel Form */}
+          {showCancelForm && (
+            <div className="space-y-3 p-4 bg-accent/50 rounded-lg">
+              <p className="text-sm font-medium">请填写取消理由</p>
+              <Textarea
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="请输入取消理由..."
+                className="min-h-[80px]"
+              />
+              <div className="flex gap-3">
+                <Button variant="mobileSecondary" size="full" onClick={() => setShowCancelForm(false)}>
+                  取消
+                </Button>
+                <Button variant="danger" size="full" onClick={handleCancel}>
+                  确认取消
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {!showRejectForm && (
+        {!showRejectForm && !showCancelForm && (
           showActions && booking.status === 'pending' ? (
             <div className="flex gap-3">
               <Button variant="danger" size="full" onClick={() => setShowRejectForm(true)}>
@@ -137,9 +205,18 @@ export function OrderDetailDialog({
               </Button>
             </div>
           ) : (
-            <Button variant="mobileSecondary" size="full" onClick={onClose}>
-              关闭
-            </Button>
+            <div className="flex flex-col gap-3">
+               {/* Salesperson can cancel their own pending/booked requests */}
+               {!showActions && user && (booking.salesId === user.id.toString() || booking.salesStaffNo === user.staffNo) && 
+                (booking.status === 'pending' || booking.status === 'booked') && (
+                 <Button variant="destructive" size="full" onClick={() => setShowCancelForm(true)}>
+                   取消订单
+                 </Button>
+               )}
+               <Button variant="mobileSecondary" size="full" onClick={onClose}>
+                 关闭
+               </Button>
+            </div>
           )
         )}
       </DialogContent>

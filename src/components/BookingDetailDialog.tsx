@@ -15,6 +15,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { toast } from 'sonner';
 
+import { uploadFile } from '@/services/h5-service';
+
 interface BookingDetailDialogProps {
   open: boolean;
   onClose: () => void;
@@ -30,29 +32,35 @@ export function BookingDetailDialog({
   const { bookings, rooms, addConsumptionRequest, getLeaderIdForSales } = useData();
   const [showConsumptionForm, setShowConsumptionForm] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const booking = bookings.find((b) => b.id === bookingId);
   const room = booking ? rooms.find((r) => r.id === booking.roomId) : null;
 
   if (!booking || !room) return null;
 
+  const roomDisplay = `${room.roomNo} - ${room.name}`;
+
   const formattedDate = format(new Date(booking.date), 'yyyy年MM月dd日 EEEE', {
     locale: zhCN,
   });
 
-  const handleConsumptionRequest = () => {
+  const handleConsumptionRequest = async () => {
     const leaderId = user?.leaderId ? user.leaderId.toString() : getLeaderIdForSales(user?.staffNo || '');
     if (!leaderId) {
       toast.error('未找到关联的队长');
       return;
     }
 
-    addConsumptionRequest({
+    setIsSubmitting(true);
+    const success = await addConsumptionRequest({
       bookingId: booking.id,
       customerId: booking.customerId,
       customerName: booking.customerName,
       roomId: booking.roomId,
       roomName: room.name,
+      storeId: room.storeId,
       date: booking.date,
       bookingSalesId: booking.salesId,
       bookingSalesName: booking.salesName,
@@ -62,18 +70,36 @@ export function BookingDetailDialog({
       imageUrl: imageUrl || undefined,
       status: 'pending',
       leaderId,
+      amount: 0,
     });
+    setIsSubmitting(false);
 
-    toast.success('已到店消费申请已提交');
-    setShowConsumptionForm(false);
-    setImageUrl('');
-    onClose();
+    if (success) {
+      setShowConsumptionForm(false);
+      setImageUrl('');
+      onClose();
+    }
   };
 
-  const handleImageUpload = () => {
-    // Simulate image upload with a placeholder URL
-    setImageUrl(`https://placeholder.pics/svg/300x200/DEDEDE/555555/凭证${Date.now()}`);
-    toast.success('凭证上传成功');
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const res = await uploadFile(file);
+      if (res.code === 200 && res.data) {
+        setImageUrl(res.data);
+        toast.success('凭证上传成功');
+      } else {
+        toast.error(res.message || '上传失败');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('上传出错');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -91,7 +117,7 @@ export function BookingDetailDialog({
           <div className="bg-secondary/50 rounded-lg p-4 space-y-3">
             <div className="flex justify-between">
               <span className="text-muted-foreground">房号</span>
-              <span className="font-medium">{room.name}</span>
+              <span className="font-medium">{roomDisplay}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">预定日期</span>
@@ -140,20 +166,30 @@ export function BookingDetailDialog({
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={handleImageUpload}
-                  className="w-full h-24 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary transition-colors"
-                >
-                  <Plus className="w-6 h-6 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">上传凭证</span>
-                </button>
+                <div className="relative">
+                   <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      disabled={isUploading}
+                   />
+                  <div
+                    className="w-full h-24 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary transition-colors"
+                  >
+                    <Plus className="w-6 h-6 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      {isUploading ? '上传中...' : '上传凭证'}
+                    </span>
+                  </div>
+                </div>
               )}
               <div className="flex gap-3">
                 <Button variant="mobileSecondary" size="full" onClick={() => setShowConsumptionForm(false)}>
                   取消
                 </Button>
-                <Button variant="mobileAction" size="full" onClick={handleConsumptionRequest}>
-                  确认提交
+                <Button variant="mobileAction" size="full" onClick={handleConsumptionRequest} disabled={isSubmitting || isUploading}>
+                  {isSubmitting ? '提交中...' : '确认提交'}
                 </Button>
               </div>
             </div>
