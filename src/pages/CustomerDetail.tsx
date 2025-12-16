@@ -1,22 +1,70 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
-import { useData } from '@/contexts/DataContext';
+import { useData, Customer } from '@/contexts/DataContext';
+import { getMemberDetail } from '@/services/h5-service';
 
 export default function CustomerDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { customers } = useData();
+  const [customer, setCustomer] = useState<Customer | undefined>(
+    customers.find((c) => c.id === id)
+  );
 
-  const customer = customers.find((c) => c.id === id);
+  useEffect(() => {
+    if (!customer && id) {
+      // Try to fetch individual member if not in list
+      getMemberDetail(parseInt(id))
+        .then(res => {
+           if (res.code === 200 && res.data) {
+             const m = res.data;
+             setCustomer({
+                id: m.id?.toString() || '',
+                name: m.name || '',
+                phone: m.phone || '',
+                idCard: '', 
+                cardType: m.cardTypeName || '普',
+                cardTypeId: m.cardTypeId,
+                openDate: m.createdAt || '',
+                balance: m.balance || 0,
+                giftAmount: m.giftBalance || 0,
+                salesId: m.staffId?.toString() || '',
+             });
+           }
+        })
+        .catch(console.error);
+    } else if (customer && id) {
+        // Refresh detail
+         getMemberDetail(parseInt(id))
+        .then(res => {
+           if (res.code === 200 && res.data) {
+             const m = res.data;
+             setCustomer({
+                id: m.id?.toString() || '',
+                name: m.name || '',
+                phone: m.phone || '',
+                idCard: '', 
+                cardType: m.cardTypeName || '普',
+                cardTypeId: m.cardTypeId,
+                openDate: m.createdAt || '',
+                balance: m.balance || 0,
+                giftAmount: m.giftBalance || 0,
+                salesId: m.staffId?.toString() || '',
+             });
+           }
+        })
+        .catch(console.error);
+    }
+  }, [id, customers]);
 
   if (!customer) {
     return (
       <div className="min-h-screen bg-background">
         <PageHeader title="客户详情" />
         <div className="p-4 text-center text-muted-foreground">
-          客户不存在
+          加载中...
         </div>
       </div>
     );

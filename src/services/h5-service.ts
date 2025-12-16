@@ -17,7 +17,61 @@ import {
   ResultRoomScheduleResp,
   ResultString,
   ResultVoid,
+  PageResultH5TeamStaffResp,
+  H5StaffCreateReq,
+  PageResultH5MemberResp,
+  H5MemberCreateReq,
+  H5MemberResp,
+  ResultListH5CardTypeResp,
 } from '@/models';
+
+// ==================== 团队管理 ====================
+
+// 团队成员列表
+export const getTeamMembers = async (page?: number, size?: number): Promise<PageResultH5TeamStaffResp> => {
+  const params = new URLSearchParams();
+  if (page) params.append('page', page.toString());
+  if (size) params.append('size', size.toString());
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const response = await apiClient.get<PageResultH5TeamStaffResp>(`/api/h5/team/staffs${query}`);
+  return response.data;
+};
+
+// 新增团队成员
+export const createTeamMember = async (request: H5StaffCreateReq): Promise<ResultVoid> => {
+  const response = await apiClient.post<ResultVoid>('/api/h5/team/staffs', request);
+  return response.data;
+};
+
+// ==================== 会员管理 ====================
+
+// 卡类型列表
+export const getCardTypes = async (): Promise<ResultListH5CardTypeResp> => {
+  const response = await apiClient.get<ResultListH5CardTypeResp>('/api/h5/card-types');
+  return response.data;
+};
+
+// 新增会员
+export const createMember = async (request: H5MemberCreateReq): Promise<ResultVoid> => {
+  const response = await apiClient.post<ResultVoid>('/api/h5/members', request);
+  return response.data;
+};
+
+// 我的会员列表
+export const getMyMembers = async (page?: number, size?: number): Promise<PageResultH5MemberResp> => {
+  const params = new URLSearchParams();
+  if (page) params.append('page', page.toString());
+  if (size) params.append('size', size.toString());
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const response = await apiClient.get<PageResultH5MemberResp>(`/api/h5/members/my${query}`);
+  return response.data;
+};
+
+// 会员详情
+export const getMemberDetail = async (id: number): Promise<H5MemberResp> => {
+  const response = await apiClient.get<H5MemberResp>(`/api/h5/members/${id}`);
+  return response.data;
+};
 
 // ==================== 预定相关 ====================
 

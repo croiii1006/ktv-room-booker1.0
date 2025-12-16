@@ -25,7 +25,7 @@ export default function RoomMatrix() {
   const { stores, getRoomsByStore, getBookingByRoomAndDate, fetchRoomSchedule } = useData();
   const [selectedCell, setSelectedCell] = useState<{ roomId: string; date: string } | null>(null);
   const [viewBookingId, setViewBookingId] = useState<string | null>(null);
-  const [selectedStoreId, setSelectedStoreId] = useState(stores[0]?.id || 'store1');
+  const [selectedStoreId, setSelectedStoreId] = useState('');
   const [weekOffset, setWeekOffset] = useState(0);
 
   const preselectedCustomerId = location.state?.selectedCustomerId;
@@ -39,12 +39,31 @@ export default function RoomMatrix() {
 
   // Fetch room schedule when store or dates change
   React.useEffect(() => {
+    // If user has a storeId, use it by default if selectedStoreId is not set (or is initial default)
+    // Actually, we should initialize selectedStoreId with user's storeId if available.
+    
     if (selectedStoreId) {
       const startStr = format(startDate, 'yyyy-MM-dd');
       const endStr = format(endDate, 'yyyy-MM-dd');
       fetchRoomSchedule(selectedStoreId, startStr, endStr);
     }
   }, [selectedStoreId, weekOffset, fetchRoomSchedule]);
+
+  // Set default store based on user profile
+  React.useEffect(() => {
+    if (user?.storeId && stores.length > 0) {
+       // Only set if selectedStoreId is still the default fallback 'store1' which might not be valid 
+       // or if we want to enforce user's store on load.
+       // Let's check if current selectedStoreId is valid in stores list.
+       const currentStore = stores.find(s => s.id === selectedStoreId);
+       if (!currentStore || (selectedStoreId === 'store1' && user.storeId.toString() !== 'store1')) {
+           setSelectedStoreId(user.storeId.toString());
+       }
+    } else if (stores.length > 0 && (!selectedStoreId || selectedStoreId === 'store1')) {
+        // Fallback to first available store if no user store
+        setSelectedStoreId(stores[0].id);
+    }
+  }, [user, stores]);
 
   // Max 8 weeks (2 months) into the future
   const maxWeekOffset = 8;

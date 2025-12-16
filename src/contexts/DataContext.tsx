@@ -21,6 +21,11 @@ import {
   rejectConsume,
   getPendingConsumes,
   getMyConsumes,
+  getTeamMembers as apiGetTeamMembers,
+  createTeamMember,
+  getCardTypes,
+  createMember,
+  getMyMembers,
 } from '@/services/h5-service';
 import {
   ReservationCreateReq,
@@ -31,6 +36,9 @@ import {
   ConsumeResp,
   RoomScheduleBookingResp,
   ResultRoomScheduleResp,
+  H5StaffCreateReq,
+  H5MemberCreateReq,
+  H5CardTypeResp,
 } from '@/models';
 
 export type CardType = '普' | '银' | '金';
@@ -42,7 +50,8 @@ export interface Customer {
   name: string;
   phone: string;
   idCard: string;
-  cardType: CardType;
+  cardType: string;
+  cardTypeId?: number;
   openDate: string;
   balance: number;
   giftAmount: number;
@@ -123,6 +132,7 @@ export interface TeamMember {
   staffNo: string;
   name: string;
   leaderId: string;
+  phone?: string;
 }
 
 interface DataContextType {
@@ -133,15 +143,19 @@ interface DataContextType {
   rechargeRequests: RechargeRequest[];
   consumptionRequests: ConsumptionRequest[];
   teamMembers: TeamMember[];
+  cardTypes: H5CardTypeResp[];
   isLoading: boolean;
   
   // Data Fetching
   fetchRoomSchedule: (storeId: string, startDate: string, endDate: string) => Promise<void>;
   fetchPendingRequests: () => Promise<void>;
   fetchMyRequests: () => Promise<void>;
+  fetchCardTypes: () => Promise<void>;
+  fetchCustomers: () => Promise<void>;
+  fetchTeamMembers: () => Promise<void>;
 
   // Actions
-  addCustomer: (customer: Omit<Customer, 'id'>) => void;
+  addCustomer: (customer: H5MemberCreateReq) => Promise<void>;
   updateCustomer: (id: string, customer: Partial<Customer>) => void;
   
   addBooking: (booking: Omit<Booking, 'id' | 'createdAt'>) => Promise<void>;
@@ -155,7 +169,7 @@ interface DataContextType {
   getPendingBookings: (leaderId?: string) => Booking[];
   getRoomsByStore: (storeId: string) => Room[];
   
-  addRechargeRequest: (request: Omit<RechargeRequest, 'id' | 'createdAt'>) => Promise<void>;
+  addRechargeRequest: (request: Omit<RechargeRequest, 'id' | 'createdAt'>) => Promise<boolean>;
   updateRechargeStatus: (id: string, status: RequestStatus, reason?: string) => Promise<void>;
   getRechargeRequestsBySales: (salesId: string) => RechargeRequest[];
   getPendingRechargeRequests: (leaderId: string) => RechargeRequest[];
@@ -165,7 +179,7 @@ interface DataContextType {
   getConsumptionRequestsBySales: (salesId: string) => ConsumptionRequest[];
   getPendingConsumptionRequests: (leaderId: string) => ConsumptionRequest[];
   
-  addTeamMember: (member: Omit<TeamMember, 'id'>) => void;
+  addTeamMember: (member: H5StaffCreateReq) => Promise<void>;
   removeTeamMember: (id: string) => void;
   getTeamMembers: (leaderId: string) => TeamMember[];
   getLeaderIdForSales: (salesId: string) => string | undefined;
@@ -177,50 +191,109 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-// Keep mock data for fallback (customers, team members)
-const generateMockData = () => {
-  const customers: Customer[] = [
-    { id: 'c0000001', name: '陈先生', phone: '13800138001', idCard: '310101199001011234', cardType: '金', openDate: '2024-01-15', balance: 5000, giftAmount: 500, salesId: 'S0000001' },
-    { id: 'c0000002', name: '刘女士', phone: '13800138002', idCard: '310101199202022345', cardType: '银', openDate: '2024-02-20', balance: 2000, giftAmount: 200, salesId: 'S0000001' },
-    { id: 'c0000003', name: '王先生', phone: '13800138003', idCard: '310101198803033456', cardType: '普', openDate: '2024-03-10', balance: 800, giftAmount: 0, salesId: 'S0000002' },
-    { id: 'c0000004', name: '赵女士', phone: '13800138004', idCard: '310101199504044567', cardType: '金', openDate: '2024-01-01', balance: 8000, giftAmount: 1000, salesId: 'S0000001' },
-  ];
-  
-  const teamMembers: TeamMember[] = [
-    { id: 'tm1', staffNo: 'S0000001', name: '张三', leaderId: 'L0000001' },
-    { id: 'tm2', staffNo: 'S0000002', name: '李四', leaderId: 'L0000001' },
-  ];
-
-  return { customers, teamMembers };
-};
+import { useAuth } from './AuthContext';
 
 export function DataProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [stores, setStores] = useState<Store[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [rechargeRequests, setRechargeRequests] = useState<RechargeRequest[]>([]);
   const [consumptionRequests, setConsumptionRequests] = useState<ConsumptionRequest[]>([]);
-  
-  // Mock data for things we can't fetch yet
-  const [customers, setCustomers] = useState<Customer[]>(generateMockData().customers);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(generateMockData().teamMembers);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [cardTypes, setCardTypes] = useState<H5CardTypeResp[]>([]);
   
   const [isLoading, setIsLoading] = useState(false);
 
-  // Initialize Stores
+  // Initialize Stores and Card Types
   useEffect(() => {
-    getStoreList().then(result => {
-      if (result.code === 200 && result.data) {
-        const storeList: Store[] = result.data.map((item: any) => ({
-          id: item.id.toString(),
-          name: item.name,
-        }));
-        setStores(storeList);
+    const init = async () => {
+      try {
+        const storeRes = await getStoreList();
+        if (storeRes.code === 200 && storeRes.data) {
+          const storeList: Store[] = storeRes.data.map((item: any) => ({
+            id: item.id.toString(),
+            name: item.name,
+          }));
+          setStores(storeList);
+        }
+        
+        const cardTypeRes = await getCardTypes();
+        if (cardTypeRes.code === 200 && cardTypeRes.data) {
+          setCardTypes(cardTypeRes.data);
+        }
+      } catch (err) {
+        console.error('Initialization failed', err);
       }
-    }).catch(err => console.error('获取门店失败', err));
+    };
+    init();
   }, []);
 
+  // Fetch initial data when user logs in
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'leader') {
+        fetchPendingRequests();
+        fetchTeamMembers();
+      }
+      fetchMyRequests();
+    }
+  }, [user]);
+
   // --- Data Fetching ---
+
+  const fetchCardTypes = useCallback(async () => {
+    try {
+      const res = await getCardTypes();
+      if (res.code === 200 && res.data) {
+        setCardTypes(res.data);
+      }
+    } catch (err) {
+      console.error('Fetch card types failed', err);
+    }
+  }, []);
+
+  const fetchCustomers = useCallback(async () => {
+    try {
+      const res = await getMyMembers(1, 100);
+      if (res.code === 200 && res.data && res.data.list) {
+        const newCustomers: Customer[] = res.data.list.map(m => ({
+          id: m.id?.toString() || '',
+          name: m.name || '',
+          phone: m.phone || '',
+          idCard: '', // Not returned by API
+          cardType: m.cardTypeName || '普',
+          cardTypeId: m.cardTypeId,
+          openDate: m.createdAt || '',
+          balance: m.balance || 0,
+          giftAmount: m.giftBalance || 0,
+          salesId: m.staffId?.toString() || '', // Or staffNo if available, but using ID for linking
+        }));
+        setCustomers(newCustomers);
+      }
+    } catch (err) {
+      console.error('Fetch customers failed', err);
+    }
+  }, []);
+
+  const fetchTeamMembers = useCallback(async () => {
+    try {
+      const res = await apiGetTeamMembers(1, 100);
+      if (res.code === 200 && res.data && res.data.list) {
+        const newMembers: TeamMember[] = res.data.list.map(m => ({
+          id: m.id?.toString() || '',
+          staffNo: m.phone || '', // Fallback to phone as staffNo if not available, or maybe name? Using phone for now.
+          name: m.name || '',
+          leaderId: '', // I am the leader
+          phone: m.phone,
+        }));
+        setTeamMembers(newMembers);
+      }
+    } catch (err) {
+      console.error('Fetch team members failed', err);
+    }
+  }, []);
 
   const fetchRoomSchedule = useCallback(async (storeId: string, startDate: string, endDate: string) => {
     setIsLoading(true);
@@ -242,10 +315,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
           storeId: storeId,
         }));
         
-        // Merge with existing rooms if needed, or just replace for the current store
-        // For simplicity, we might want to keep rooms from other stores if we switch back and forth, 
-        // but replacing is safer for consistency with the schedule.
-        // However, getRoomsByStore filters by storeId.
         setRooms(prev => {
           const otherStoreRooms = prev.filter(r => r.storeId !== storeId);
           return [...otherStoreRooms, ...newRooms];
@@ -282,19 +351,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           }
         });
         
-        // Replace bookings for this store/date range? 
-        // Or just replace all? RoomMatrix assumes we have the data.
-        // We should merge carefully or just replace if we only view one store at a time.
-        // To be safe, we can filter out bookings for this store/date range and append new ones.
-        // But simpler: just setBookings(newBookings) if we only care about what's visible.
-        // But getPendingBookings might need data from other stores?
-        // Let's replace bookings for the current view, but we also have fetchPendingRequests which adds more bookings.
-        
-        // Strategy: Keep a master list. Remove intersection, add new.
         setBookings(prev => {
-           // This is complex. For now, let's just use the loaded bookings for the matrix.
-           // But if we do that, we lose pending bookings fetched separately.
-           // Let's append/update based on ID.
            const bookingMap = new Map(prev.map(b => [b.id, b]));
            newBookings.forEach(b => bookingMap.set(b.id, b));
            return Array.from(bookingMap.values());
@@ -355,8 +412,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
            rejectReason: r.remark
          }));
          setRechargeRequests(prev => {
-            // Replace all pending? Or merge?
-            // Simple merge by ID
             const map = new Map(prev.map(r => [r.id, r]));
             pendingRecharges.forEach(r => map.set(r.id, r));
             return Array.from(map.values());
@@ -401,6 +456,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const fetchMyRequests = useCallback(async () => {
     setIsLoading(true);
     try {
+        await Promise.all([
+          fetchCustomers(),
+          fetchTeamMembers(),
+          fetchCardTypes()
+        ]);
+
         // Fetch My Reservations
         const resRes = await getMyReservations(1, 100);
         if (resRes.code === 200 && resRes.data && resRes.data.list) {
@@ -428,14 +489,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
             });
         }
 
-        // Similar to fetchPendingRequests but calling getMy...
-        // Implementing simplified version
+        // Fetch Recharges
         const resRecharge = await getMyRecharges(1, 100);
         if (resRecharge.code === 200 && resRecharge.data && resRecharge.data.list) {
              const myRecharges = resRecharge.data.list.map(r => ({
                id: r.id?.toString() || '',
                customerId: r.memberId?.toString() || '',
-               customerName: 'Unknown',
+               customerName: r.memberName || 'Unknown',
                amount: r.amount || 0,
                giftProduct: r.giftAmount ? `送${r.giftAmount}` : '',
                status: (r.status === 'PENDING' ? 'pending' : r.status === 'APPROVED' ? 'approved' : 'rejected') as RequestStatus,
@@ -485,32 +545,39 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } finally {
         setIsLoading(false);
     }
-  }, []);
+  }, [fetchCustomers, fetchTeamMembers, fetchCardTypes]);
 
   // --- Actions ---
 
-  const addCustomer = (customer: Omit<Customer, 'id'>) => {
-    // Mock
-    const newCustomer = { ...customer, id: `c${Date.now()}` };
-    setCustomers([...customers, newCustomer]);
+  const addCustomer = async (customer: H5MemberCreateReq) => {
+    try {
+      const res = await createMember(customer);
+      if (res.code === 200) {
+        toast.success('客户添加成功');
+        fetchCustomers(); // Refresh
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || '客户添加失败');
+    }
   };
 
   const updateCustomer = (id: string, updates: Partial<Customer>) => {
+    // Optimistic update only
     setCustomers(customers.map(c => c.id === id ? { ...c, ...updates } : c));
   };
 
   const addBooking = async (booking: Omit<Booking, 'id' | 'createdAt'>) => {
     try {
         const req: ReservationCreateReq = {
-            storeId: 1, // Default to 1? Or find storeId from roomId
+            storeId: 1, 
             roomId: parseInt(booking.roomId),
-            memberId: parseInt(booking.customerId), // Assuming customerId is number
-            staffId: parseInt(booking.salesId) || 0, // Need correct ID
+            memberId: parseInt(booking.customerId), 
+            staffId: parseInt(booking.salesId) || 0,
             reserveDate: booking.date,
             guestCount: 1,
             remark: ''
         };
-        // Find storeId from room
         const room = rooms.find(r => r.id === booking.roomId);
         if (room) {
             req.storeId = parseInt(room.storeId);
@@ -519,9 +586,40 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const res = await createReservation(req);
         if (res.code === 200) {
              toast.success('预定提交成功');
-             // Refresh data?
-             // Since we don't know the new ID immediately in a useful way to update state locally without re-fetch,
-             // ideally we re-fetch.
+             // Refresh schedule if viewing the same period
+             // Since we don't know the current view params here easily, 
+             // we can trigger a refetch if we store the last fetched params or just rely on the component to refresh.
+             // But for immediate feedback, let's update local state optimistically or re-fetch.
+             
+             // Simple optimistic update:
+             // But we need the real ID and status. 
+             // Re-fetching room schedule is safer.
+             if (room) {
+                 // Trigger a refresh of the room schedule for the booked date
+                 // We need to know which store/dates were being viewed.
+                 // Ideally, components should subscribe to changes or we expose a refresh method.
+                 // For now, let's add it to the local bookings list so it shows up.
+                 
+                 const newBooking: Booking = {
+                     id: res.data?.id?.toString() || `temp_${Date.now()}`,
+                     roomId: booking.roomId,
+                     date: booking.date,
+                     customerId: booking.customerId,
+                     customerName: booking.customerName,
+                     price: room.price,
+                     status: 'pending',
+                     salesId: user?.id.toString() || '',
+                     salesName: user?.name || '',
+                     salesStaffNo: user?.staffNo || '',
+                     createdAt: format(new Date(), 'yyyy-MM-dd HH:mm'),
+                     reserveNo: res.data?.reserveNo
+                 };
+                 
+                 setBookings(prev => [...prev, newBooking]);
+                 
+                 // Also refresh the schedule from server to be sure
+                 fetchRoomSchedule(room.storeId, booking.date, booking.date);
+             }
         }
     } catch (err) {
         console.error(err);
@@ -530,15 +628,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const updateBooking = async (id: string, updates: Partial<Booking>) => {
-      // General update not fully supported by API for all fields
-      // But status update is supported via approve/reject
       console.warn("General updateBooking not implemented fully with API");
   };
 
   const updateBookingStatus = async (id: string, status: BookingStatus, reason?: string) => {
       try {
           if (status === 'booked') {
-              // Approve
               await approveReservation({ reservationId: parseInt(id), remark: reason });
               toast.success('审核通过');
           } else if (status === 'rejected') {
@@ -549,7 +644,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
               toast.success('已取消');
           }
           
-          // Optimistic update
           setBookings(prev => prev.map(b => b.id === id ? { ...b, status, rejectReason: reason } : b));
           
       } catch (err) {
@@ -576,13 +670,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const getCustomersByStaff = (staffId: string, role?: 'sales' | 'leader') => {
-    if (role === 'leader') {
-      const teamMemberIds = teamMembers
-        .filter((tm: TeamMember) => tm.leaderId === staffId)
-        .map((tm: TeamMember) => tm.staffNo);
-      return customers.filter((c: Customer) => teamMemberIds.includes(c.salesId));
-    }
-    return customers.filter((c: Customer) => c.salesId === staffId);
+    // If role is leader, fetch all customers of my team?
+    // Currently getMyMembers returns my members.
+    // If I am a leader, maybe I can see my team's members?
+    // The API /api/h5/members/my might only return members where I am the staff.
+    // We'll stick to what we have.
+    return customers;
   };
 
   const getBookingsByStaff = (staffId: string) => {
@@ -590,9 +683,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const getPendingBookings = (leaderId?: string) => {
-      // In real API, we just fetch pending.
-      // If leaderId is provided, we might filter locally if we have mixed data, 
-      // but getPendingReservations API usually returns what the user can see.
       return bookings.filter((b: Booking) => b.status === 'pending');
   };
 
@@ -600,15 +690,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return rooms.filter((r: Room) => r.storeId === storeId);
   };
 
-  const addRechargeRequest = async (request: Omit<RechargeRequest, 'id' | 'createdAt'>) => {
+  const addRechargeRequest = async (request: Omit<RechargeRequest, 'id' | 'createdAt'>): Promise<boolean> => {
       try {
           const req: RechargeApplyCreateReq = {
               memberId: parseInt(request.customerId),
+              storeId: user?.storeId || 1,
+              staffId: parseInt(request.salesId),
               amount: request.amount,
-              giftAmount: 0, // Parse from giftProduct?
+              giftAmount: 0, 
               remark: ''
           };
-          // Try to parse gift amount
           if (request.giftProduct && request.giftProduct.includes('送')) {
               const num = parseInt(request.giftProduct.replace('送', ''));
               if (!isNaN(num)) req.giftAmount = num;
@@ -617,10 +708,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
           const res = await createRechargeApply(req);
           if (res.code === 200) {
               toast.success('充值申请提交成功');
+              // Refresh requests to include the new one
+              fetchMyRequests();
+              return true;
+          } else {
+              toast.error(res.message || '充值申请提交失败');
+              return false;
           }
-      } catch (err) {
+      } catch (err: any) {
           console.error(err);
-          toast.error('充值申请提交失败');
+          toast.error(err.message || '充值申请提交失败');
+          return false;
       }
   };
 
@@ -641,7 +739,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const getRechargeRequestsBySales = (salesId: string) => {
-    return rechargeRequests.filter((r: RechargeRequest) => r.salesId === salesId);
+    // salesId can be id (number string) or staffNo (string)
+    // The API response returns requests where staffId is the database ID.
+    // So we should primarily filter by matching salesId (which is staffId in the object)
+    return rechargeRequests.filter((r: RechargeRequest) => 
+        r.salesId === salesId || r.salesStaffNo === salesId
+    );
   };
 
   const getPendingRechargeRequests = (leaderId: string) => {
@@ -653,7 +756,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           const req: ConsumeApplyCreateReq = {
               roomId: parseInt(request.roomId),
               memberId: parseInt(request.customerId),
-              amount: 0, // Missing in ConsumptionRequest?
+              amount: 0, 
               remark: ''
           };
           const res = await createConsumeApply(req);
@@ -690,17 +793,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return consumptionRequests.filter((r: ConsumptionRequest) => r.status === 'pending');
   };
 
-  const addTeamMember = (member: Omit<TeamMember, 'id'>) => {
-    const newMember = { ...member, id: `tm${Date.now()}` };
-    setTeamMembers([...teamMembers, newMember]);
+  const addTeamMember = async (member: H5StaffCreateReq) => {
+    try {
+      const res = await createTeamMember(member);
+      if (res.code === 200) {
+        toast.success('业务员添加成功');
+        fetchTeamMembers(); // Refresh
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || '添加失败');
+    }
   };
 
   const removeTeamMember = (id: string) => {
-    setTeamMembers(teamMembers.filter((tm: TeamMember) => tm.id !== id));
+    toast.error('API暂不支持删除业务员');
   };
 
   const getTeamMembers = (leaderId: string) => {
-    return teamMembers.filter((tm: TeamMember) => tm.leaderId === leaderId);
+    return teamMembers;
   };
 
   const getLeaderIdForSales = (salesId: string): string | undefined => {
@@ -735,10 +846,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
       rechargeRequests,
       consumptionRequests,
       teamMembers,
+      cardTypes,
       isLoading,
       fetchRoomSchedule,
       fetchPendingRequests,
       fetchMyRequests,
+      fetchCardTypes,
+      fetchCustomers,
+      fetchTeamMembers,
       addCustomer,
       updateCustomer,
       addBooking,

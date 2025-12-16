@@ -69,7 +69,7 @@ export function BookingDialog({
       customerName: customer.name,
       price: room?.price || 0,
       status: 'pending',
-      salesId: user?.staffNo || '',
+      salesId: user?.id.toString() || '',
       salesName: user?.name || '',
       salesStaffNo: user?.staffNo || '',
     });

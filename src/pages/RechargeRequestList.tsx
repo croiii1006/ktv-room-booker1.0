@@ -13,13 +13,22 @@ export default function RechargeRequestList() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   React.useEffect(() => {
+    // Only fetch if requests are empty to avoid double fetching on mount
+    // or rely on context to handle fetching.
+    // However, if we just navigated here after a create, we want to ensure freshness.
+    // fetchMyRequests() is already called in DataContext on user change, but manual refresh is good.
     fetchMyRequests();
   }, [fetchMyRequests]);
 
-  const requests = getRechargeRequestsBySales(user?.staffNo || '');
-  const sortedRequests = [...requests].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  const requests = getRechargeRequestsBySales(user?.id.toString() || user?.staffNo || '');
+  
+  // Sort by createdAt descending
+  const sortedRequests = [...requests].sort((a, b) => {
+    // Handle potential null/undefined dates
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return dateB - dateA;
+  });
 
   return (
     <div className="min-h-screen bg-background">

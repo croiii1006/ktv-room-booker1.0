@@ -1,29 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
-import { useData, CardType } from '@/contexts/DataContext';
+import { useData } from '@/contexts/DataContext';
 import { toast } from 'sonner';
 
 export default function CustomerAdd() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { addCustomer } = useData();
+  const { addCustomer, cardTypes } = useData();
 
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     idCard: '',
-    cardType: '普' as CardType,
-    openDate: format(new Date(), 'yyyy-MM-dd'),
-    balance: '',
-    giftAmount: '',
+    cardTypeId: undefined as number | undefined,
+    remark: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Set default card type
+  useEffect(() => {
+    if (cardTypes.length > 0 && !formData.cardTypeId) {
+      setFormData(prev => ({ ...prev, cardTypeId: cardTypes[0].id }));
+    }
+  }, [cardTypes, formData.cardTypeId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.name.trim()) {
@@ -36,18 +40,19 @@ export default function CustomerAdd() {
       return;
     }
 
-    addCustomer({
+    if (!formData.cardTypeId) {
+      toast.error('请选择卡类型');
+      return;
+    }
+
+    await addCustomer({
       name: formData.name,
       phone: formData.phone,
       idCard: formData.idCard,
-      cardType: formData.cardType,
-      openDate: formData.openDate,
-      balance: Number(formData.balance) || 0,
-      giftAmount: Number(formData.giftAmount) || 0,
-      salesId: user?.staffNo || '',
+      cardTypeId: formData.cardTypeId,
+      remark: formData.remark,
     });
 
-    toast.success('客户添加成功');
     navigate('/customers');
   };
 
@@ -93,58 +98,37 @@ export default function CustomerAdd() {
 
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              卡类型
+              卡类型 <span className="text-destructive">*</span>
             </label>
-            <div className="flex gap-2">
-              {(['普', '银', '金'] as CardType[]).map((type) => (
+            <div className="flex gap-2 flex-wrap">
+              {cardTypes.map((type) => (
                 <button
-                  key={type}
+                  key={type.id}
                   type="button"
-                  onClick={() => setFormData({ ...formData, cardType: type })}
-                  className={`flex-1 py-3 rounded-lg border text-center font-medium transition-colors ${
-                    formData.cardType === type
+                  onClick={() => setFormData({ ...formData, cardTypeId: type.id })}
+                  className={`flex-1 min-w-[80px] py-3 rounded-lg border text-center font-medium transition-colors ${
+                    formData.cardTypeId === type.id
                       ? 'bg-primary text-primary-foreground border-primary'
                       : 'bg-card text-foreground border-border hover:bg-accent'
                   }`}
                 >
-                  {type}卡
+                  {type.name}
                 </button>
               ))}
             </div>
+            {cardTypes.length === 0 && (
+               <p className="text-sm text-muted-foreground mt-1">暂无卡类型</p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              开卡日期
+              备注
             </label>
             <Input
-              type="date"
-              value={formData.openDate}
-              onChange={(e) => setFormData({ ...formData, openDate: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              账户余额
-            </label>
-            <Input
-              type="number"
-              value={formData.balance}
-              onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
-              placeholder="0"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              赠送金额
-            </label>
-            <Input
-              type="number"
-              value={formData.giftAmount}
-              onChange={(e) => setFormData({ ...formData, giftAmount: e.target.value })}
-              placeholder="0"
+              value={formData.remark}
+              onChange={(e) => setFormData({ ...formData, remark: e.target.value })}
+              placeholder="请输入备注"
             />
           </div>
         </div>

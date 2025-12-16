@@ -17,46 +17,38 @@ import { toast } from 'sonner';
 export default function TeamManagement() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { getTeamMembers, addTeamMember, removeTeamMember, teamMembers } = useData();
+  const { getTeamMembers, addTeamMember, removeTeamMember } = useData();
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [newMemberStaffNo, setNewMemberStaffNo] = useState('');
-  const [newMemberName, setNewMemberName] = useState('');
+  
+  const [formData, setFormData] = useState({
+    username: '', // staffNo
+    name: '',
+    password: '',
+    phone: '',
+  });
 
   const myTeamMembers = getTeamMembers(user?.staffNo || '');
 
-  const handleAddMember = () => {
-    if (!newMemberStaffNo.trim() || !newMemberName.trim()) {
+  const handleAddMember = async () => {
+    if (!formData.username.trim() || !formData.name.trim() || !formData.password.trim() || !formData.phone.trim()) {
       toast.error('请填写完整信息');
       return;
     }
 
-    // Check if already assigned to another leader
-    const existing = teamMembers.find((tm) => tm.staffNo === newMemberStaffNo);
-    if (existing) {
-      if (existing.leaderId === user?.staffNo) {
-        toast.error('该业务员已在您的团队中');
-      } else {
-        toast.error('该业务员已被其他队长关联');
-      }
-      return;
-    }
-
-    addTeamMember({
-      staffNo: newMemberStaffNo,
-      name: newMemberName,
-      leaderId: user?.staffNo || '',
+    await addTeamMember({
+      username: formData.username,
+      name: formData.name,
+      password: formData.password,
+      phone: formData.phone,
     });
 
-    toast.success('业务员添加成功');
     setShowAddDialog(false);
-    setNewMemberStaffNo('');
-    setNewMemberName('');
+    setFormData({ username: '', name: '', password: '', phone: '' });
   };
 
   const handleRemoveMember = (id: string, name: string) => {
     if (confirm(`确定要删除业务员 ${name} 吗？`)) {
       removeTeamMember(id);
-      toast.success('业务员已删除');
     }
   };
 
@@ -90,10 +82,11 @@ export default function TeamManagement() {
               >
                 <div
                   className="flex-1 cursor-pointer"
-                  onClick={() => navigate(`/team/${member.staffNo}`)}
+                  onClick={() => navigate(`/team/${member.staffNo || member.id}`)}
                 >
                   <h3 className="font-semibold text-foreground">{member.name}</h3>
-                  <p className="text-sm text-muted-foreground">工号: {member.staffNo}</p>
+                  <p className="text-sm text-muted-foreground">工号: {member.staffNo || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground">手机: {member.phone || 'N/A'}</p>
                 </div>
                 <button
                   onClick={(e) => {
@@ -120,22 +113,44 @@ export default function TeamManagement() {
           <div className="space-y-4 py-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                工号
+                工号 <span className="text-destructive">*</span>
               </label>
               <Input
                 placeholder="请输入业务员工号"
-                value={newMemberStaffNo}
-                onChange={(e) => setNewMemberStaffNo(e.target.value)}
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                姓名
+                姓名 <span className="text-destructive">*</span>
               </label>
               <Input
                 placeholder="请输入业务员姓名"
-                value={newMemberName}
-                onChange={(e) => setNewMemberName(e.target.value)}
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                密码 <span className="text-destructive">*</span>
+              </label>
+              <Input
+                type="password"
+                placeholder="请输入登录密码"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                手机号 <span className="text-destructive">*</span>
+              </label>
+              <Input
+                type="tel"
+                placeholder="请输入手机号"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               />
             </div>
           </div>

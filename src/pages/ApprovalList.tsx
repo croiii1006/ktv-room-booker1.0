@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { PageHeader } from '@/components/PageHeader';
@@ -7,8 +7,12 @@ import { OrderDetailDialog } from '@/components/OrderDetailDialog';
 import { useData } from '@/contexts/DataContext';
 
 export default function ApprovalList() {
-  const { getPendingBookings, rooms } = useData();
+  const { getPendingBookings, rooms, fetchPendingRequests } = useData();
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchPendingRequests();
+  }, [fetchPendingRequests]);
 
   const pendingOrders = getPendingBookings();
   const sortedOrders = [...pendingOrders].sort(

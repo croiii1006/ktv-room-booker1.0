@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { toast } from 'sonner';
+import { uploadFile } from '@/services/h5-service';
 
 export default function RechargeRequest() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,8 @@ export default function RechargeRequest() {
   const [amount, setAmount] = useState('');
   const [giftProduct, setGiftProduct] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   if (!customer) {
     return (
@@ -32,38 +35,57 @@ export default function RechargeRequest() {
     );
   }
 
-  const handleImageUpload = () => {
-    setImageUrl(`https://placeholder.pics/svg/300x200/DEDEDE/555555/凭证${Date.now()}`);
-    toast.success('凭证上传成功');
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const res = await uploadFile(file);
+      if (res.code === 200 && res.data) {
+        setImageUrl(res.data);
+        toast.success('凭证上传成功');
+      } else {
+        toast.error(res.message || '上传失败');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('上传出错');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!amount || parseFloat(amount) <= 0) {
       toast.error('请输入有效的充值金额');
       return;
     }
 
-    const leaderId = getLeaderIdForSales(user?.staffNo || '');
+    const leaderId = user?.leaderId ? user.leaderId.toString() : getLeaderIdForSales(user?.staffNo || '');
     if (!leaderId) {
       toast.error('未找到关联的队长，请联系管理员');
       return;
     }
 
-    addRechargeRequest({
+    setIsSubmitting(true);
+    const success = await addRechargeRequest({
       customerId: customer.id,
       customerName: customer.name,
       amount: parseFloat(amount),
       giftProduct: giftProduct,
       imageUrl: imageUrl || undefined,
       status: 'pending',
-      salesId: user?.staffNo || '',
+      salesId: user?.id.toString() || '',
       salesName: user?.name || '',
       salesStaffNo: user?.staffNo || '',
       leaderId,
     });
+    setIsSubmitting(false);
 
-    toast.success('充值申请已提交');
-    navigate('/recharge-requests');
+    if (success) {
+      navigate('/recharge-requests');
+    }
   };
 
   return (
@@ -135,13 +157,23 @@ export default function RechargeRequest() {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={handleImageUpload}
-                className="w-full h-32 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary transition-colors"
-              >
-                <Plus className="w-8 h-8 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">点击上传凭证</span>
-              </button>
+              <div className="relative">
+                 <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    disabled={isUploading}
+                 />
+                <div
+                  className="w-full h-32 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary transition-colors"
+                >
+                  <Plus className="w-8 h-8 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    {isUploading ? '上传中...' : '点击上传凭证'}
+                  </span>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -151,8 +183,8 @@ export default function RechargeRequest() {
           <Button variant="mobileSecondary" size="full" onClick={() => navigate(-1)}>
             取消
           </Button>
-          <Button variant="mobileAction" size="full" onClick={handleSubmit}>
-            提交申请
+          <Button variant="mobileAction" size="full" onClick={handleSubmit} disabled={isSubmitting || isUploading}>
+            {isSubmitting ? '提交中...' : '提交申请'}
           </Button>
         </div>
       </main>

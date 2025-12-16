@@ -41,7 +41,7 @@ export function BookingDetailDialog({
   });
 
   const handleConsumptionRequest = () => {
-    const leaderId = getLeaderIdForSales(user?.staffNo || '');
+    const leaderId = user?.leaderId ? user.leaderId.toString() : getLeaderIdForSales(user?.staffNo || '');
     if (!leaderId) {
       toast.error('未找到关联的队长');
       return;
@@ -56,7 +56,7 @@ export function BookingDetailDialog({
       date: booking.date,
       bookingSalesId: booking.salesId,
       bookingSalesName: booking.salesName,
-      serviceSalesId: user?.staffNo || '',
+      serviceSalesId: user?.id.toString() || '',
       serviceSalesName: user?.name || '',
       serviceSalesStaffNo: user?.staffNo || '',
       imageUrl: imageUrl || undefined,
