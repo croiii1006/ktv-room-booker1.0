@@ -9,7 +9,7 @@ import { useData } from '@/contexts/DataContext';
 
 export default function BookingApproval() {
   const { user } = useAuth();
-  const { getPendingBookings, rooms, fetchPendingRequests } = useData();
+  const { getPendingBookings, rooms, fetchPendingRequests, teamMembers } = useData();
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   React.useEffect(() => {
@@ -37,6 +37,16 @@ export default function BookingApproval() {
               locale: zhCN,
             });
 
+            // Resolve Sales Name
+            let salesName = order.salesName;
+            if (!salesName || salesName === 'Unknown' || salesName === order.salesId) {
+                const staff = teamMembers.find(t => t.id === order.salesId || t.staffNo === order.salesStaffNo);
+                if (staff) salesName = staff.name;
+                else if (user && (user.id.toString() === order.salesId || user.staffNo === order.salesStaffNo)) {
+                    salesName = user.name;
+                }
+            }
+
             return (
               <div
                 key={order.id}
@@ -46,7 +56,7 @@ export default function BookingApproval() {
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <h3 className="font-semibold text-foreground">
-                      {room?.name}房 - {order.customerName}
+                      {room ? `${room.roomNo} - ${room.name}` : `房间 ${order.roomId}`}
                     </h3>
                     <p className="text-sm text-muted-foreground mt-0.5">
                       {formattedDate}
@@ -56,7 +66,7 @@ export default function BookingApproval() {
                 </div>
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span>
-                    申请人: {order.salesName} ({order.salesStaffNo})
+                    申请人: {salesName} ({order.salesStaffNo})
                   </span>
                   <span className="font-medium text-foreground">¥{order.price}</span>
                 </div>

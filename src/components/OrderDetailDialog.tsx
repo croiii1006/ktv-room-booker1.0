@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useData } from '@/contexts/DataContext';
+import { getMemberDetail } from '@/services/h5-service';
 import { toast } from 'sonner';
 
 interface OrderDetailDialogProps {
@@ -30,12 +31,28 @@ export function OrderDetailDialog({
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [reason, setReason] = useState('');
   const [showCancelForm, setShowCancelForm] = useState(false);
+  const [fetchedCustomerName, setFetchedCustomerName] = useState<string | null>(null);
 
   // Ensure we can find the room for display.
   // If fetchRoomSchedule hasn't been called for this room's date/store, 'room' might be undefined.
   // However, we can try to fall back to just finding the room by ID in the full list if available,
   // or show a placeholder name.
   const booking = bookings.find((b) => b.id === bookingId);
+
+  // Fetch customer details if name is missing
+  React.useEffect(() => {
+    if (open && booking && (!booking.customerName || booking.customerName === 'Unknown' || booking.customerName === booking.customerId)) {
+      const customer = customers.find(c => c.id === booking.customerId);
+      if (!customer) {
+        getMemberDetail(parseInt(booking.customerId)).then(res => {
+          if (res && res.name) setFetchedCustomerName(res.name);
+        }).catch(() => {});
+      }
+    } else {
+        setFetchedCustomerName(null);
+    }
+  }, [open, booking, customers]);
+
   const room = booking ? rooms.find((r) => r.id === booking.roomId) : null;
 
   if (!booking) return null;
@@ -53,6 +70,7 @@ export function OrderDetailDialog({
   if (!customerName || customerName === 'Unknown' || customerName === booking.customerId) {
       const customer = customers.find(c => c.id === booking.customerId);
       if (customer) customerName = customer.name;
+      else if (fetchedCustomerName) customerName = fetchedCustomerName;
   }
 
   // Find sales name from ID if not present or is ID

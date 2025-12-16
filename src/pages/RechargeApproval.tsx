@@ -7,7 +7,7 @@ import { useData } from '@/contexts/DataContext';
 
 export default function RechargeApproval() {
   const { user } = useAuth();
-  const { getPendingRechargeRequests, fetchPendingRequests } = useData();
+  const { getPendingRechargeRequests, fetchPendingRequests, teamMembers } = useData();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   React.useEffect(() => {
@@ -29,7 +29,18 @@ export default function RechargeApproval() {
             <p className="text-muted-foreground">暂无待审核充值申请</p>
           </div>
         ) : (
-          sortedRequests.map((request) => (
+          sortedRequests.map((request) => {
+            // Resolve Sales Name
+            let salesName = request.salesName;
+            if (!salesName || salesName === 'Unknown' || salesName === request.salesId) {
+                const staff = teamMembers.find(t => t.id === request.salesId || t.staffNo === request.salesStaffNo);
+                if (staff) salesName = staff.name;
+                else if (user && (user.id.toString() === request.salesId || user.staffNo === request.salesStaffNo)) {
+                    salesName = user.name;
+                }
+            }
+
+            return (
             <div
               key={request.id}
               onClick={() => setSelectedId(request.id)}
@@ -47,7 +58,7 @@ export default function RechargeApproval() {
                 <RequestStatusBadge status={request.status} />
               </div>
               <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>申请人: {request.salesName} ({request.salesStaffNo})</span>
+                <span>申请人: {salesName} ({request.salesStaffNo})</span>
               </div>
               {request.giftProduct && (
                 <p className="text-sm text-muted-foreground mt-1">
@@ -58,7 +69,8 @@ export default function RechargeApproval() {
                 {request.createdAt}
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </main>
 

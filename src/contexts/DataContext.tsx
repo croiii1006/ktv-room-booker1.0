@@ -26,6 +26,7 @@ import {
   getCardTypes,
   createMember,
   getMyMembers,
+  getReservationDetail, // Imported
 } from '@/services/h5-service';
 import {
   ReservationCreateReq,
@@ -458,9 +459,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
          const pendingRecharges = resRecharge.data.list.map(r => ({
            id: r.id?.toString() || '',
            customerId: r.memberId?.toString() || '',
-           customerName: 'Unknown',
-           amount: r.amount || 0,
-           giftProduct: r.giftAmount ? `送${r.giftAmount}` : '',
+           customerName: r.memberName || 'Unknown',
+               amount: r.amount || 0,
+               giftProduct: r.giftAmount ? `送${r.giftAmount}` : '',
            status: 'pending' as RequestStatus,
            salesId: r.staffId?.toString() || '',
            salesName: 'Unknown',
@@ -479,24 +480,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // Fetch Consumes
       const resConsume = await getPendingConsumes(1, 100);
       if (resConsume.code === 200 && resConsume.data && resConsume.data.list) {
-        const pendingConsumes = resConsume.data.list.map(c => ({
-          id: c.id?.toString() || '',
-          bookingId: '', // Not in list resp?
-          customerId: c.memberId?.toString() || '',
-          customerName: 'Unknown',
-          roomId: c.roomId?.toString() || '',
-          roomName: '', // Need lookup
-          date: '', 
-          bookingSalesId: '',
-          bookingSalesName: '',
-          serviceSalesId: c.staffId?.toString() || '',
-          serviceSalesName: 'Unknown',
-          serviceSalesStaffNo: c.staffId?.toString() || '',
-          status: 'pending' as RequestStatus,
-          leaderId: '',
-          createdAt: c.createdAt || '',
-          rejectReason: c.remark
-        }));
+        const consumeList = resConsume.data.list;
+
+        const pendingConsumes = consumeList.map(c => {
+          return {
+            id: c.id?.toString() || '',
+            bookingId: c.reservationId?.toString() || '', 
+            customerId: c.memberId?.toString() || '',
+            customerName: c.memberName || 'Unknown',
+            roomId: c.roomId?.toString() || '',
+            roomName: '', // Need lookup
+            date: c.createdAt || '', 
+            bookingSalesId: c.applyStaffId?.toString() || '',
+            bookingSalesName: '', // Resolved in UI
+            serviceSalesId: c.receptionStaffId?.toString() || '',
+            serviceSalesName: 'Unknown',
+            serviceSalesStaffNo: c.receptionStaffId?.toString() || '',
+            status: 'pending' as RequestStatus,
+            leaderId: '',
+            createdAt: c.createdAt || '',
+            rejectReason: c.remark,
+            amount: c.consumeAmount || 0
+          };
+        });
         setConsumptionRequests(prev => {
             const map = new Map(prev.map(r => [r.id, r]));
             pendingConsumes.forEach(r => map.set(r.id, r));
@@ -561,7 +567,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         // Fetch Recharges
         const resRecharge = await getMyRecharges(1, 100);
         if (resRecharge.code === 200 && resRecharge.data && resRecharge.data.list) {
-             const myRecharges = resRecharge.data.list.map(r => ({
+            const myRecharges = resRecharge.data.list.map(r => ({
                id: r.id?.toString() || '',
                customerId: r.memberId?.toString() || '',
                customerName: r.memberName || 'Unknown',
@@ -594,13 +600,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
               date: c.createdAt || '',
               bookingSalesId: '',
               bookingSalesName: '',
-              serviceSalesId: c.applyStaffId?.toString() || '',
-              serviceSalesName: 'Me',
-              serviceSalesStaffNo: c.applyStaffId?.toString() || '',
+              serviceSalesId: c.applyStaffId?.toString() || c.staffId?.toString() || '',
+          serviceSalesName: 'Me', // Since this is getMyConsumes, I am the service staff
+          serviceSalesStaffNo: c.applyStaffId?.toString() || c.staffId?.toString() || '',
               status: (c.status === 'PENDING' ? 'pending' : c.status === 'APPROVED' ? 'approved' : 'rejected') as RequestStatus,
               leaderId: '',
               createdAt: c.createdAt || '',
-              rejectReason: c.remark
+              rejectReason: c.remark,
+              amount: c.consumeAmount || 0
             }));
             setConsumptionRequests(prev => {
                 const map = new Map(prev.map(r => [r.id, r]));
@@ -702,14 +709,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateBookingStatus = async (id: string, status: BookingStatus, reason?: string) => {
       try {
+          if (!user?.id) {
+            toast.error('用户信息缺失，无法操作');
+            return;
+          }
+
           if (status === 'booked') {
-              await approveReservation({ reservationId: parseInt(id), remark: reason });
+              await approveReservation({ id: parseInt(id), reviewerId: user.id, reason });
               toast.success('审核通过');
           } else if (status === 'rejected') {
-              await rejectReservation({ reservationId: parseInt(id), remark: reason });
+              await rejectReservation({ id: parseInt(id), reviewerId: user.id, reason });
               toast.success('审核拒绝');
           } else if (status === 'cancelled') {
-              await cancelReservation({ reservationId: parseInt(id), remark: reason });
+              await cancelReservation({ id: parseInt(id), staffId: user.id, reason });
               toast.success('已取消');
           }
           
@@ -793,11 +805,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateRechargeStatus = async (id: string, status: RequestStatus, reason?: string) => {
       try {
+          if (!user?.id) {
+            toast.error('用户信息缺失，无法操作');
+            return;
+          }
+
           if (status === 'approved') {
-              await approveRecharge({ applyId: parseInt(id), remark: reason });
+              await approveRecharge({ id: parseInt(id), reviewerId: user.id, reason });
               toast.success('审核通过');
           } else if (status === 'rejected') {
-              await rejectRecharge({ applyId: parseInt(id), remark: reason });
+              await rejectRecharge({ id: parseInt(id), reviewerId: user.id, reason });
               toast.success('审核拒绝');
           }
           setRechargeRequests(prev => prev.map(r => r.id === id ? { ...r, status, rejectReason: reason } : r));
@@ -854,11 +871,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateConsumptionStatus = async (id: string, status: RequestStatus, reason?: string) => {
        try {
+          if (!user?.id) {
+            toast.error('用户信息缺失，无法操作');
+            return;
+          }
+
           if (status === 'approved') {
-              await approveConsume({ applyId: parseInt(id), remark: reason });
+              await approveConsume({ id: parseInt(id), reviewerId: user.id, reason });
               toast.success('审核通过');
           } else if (status === 'rejected') {
-              await rejectConsume({ applyId: parseInt(id), remark: reason });
+              await rejectConsume({ id: parseInt(id), reviewerId: user.id, reason });
               toast.success('审核拒绝');
           }
           setConsumptionRequests(prev => prev.map(r => r.id === id ? { ...r, status, rejectReason: reason } : r));
@@ -876,16 +898,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return consumptionRequests.filter((r: ConsumptionRequest) => r.status === 'pending');
   };
 
-  const addTeamMember = async (member: H5StaffCreateReq) => {
+  const addTeamMember = async (member: H5StaffCreateReq): Promise<boolean> => {
     try {
       const res = await createTeamMember(member);
       if (res.code === 200) {
         toast.success('业务员添加成功');
         fetchTeamMembers(); // Refresh
+        return true;
+      } else {
+        toast.error(res.message || '添加失败');
+        return false;
       }
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || '添加失败');
+      return false;
     }
   };
 

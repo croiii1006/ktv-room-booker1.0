@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ export default function TeamManagement() {
   const { user } = useAuth();
   const { getTeamMembers, addTeamMember, removeTeamMember } = useData();
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     username: '', // staffNo
@@ -35,15 +36,19 @@ export default function TeamManagement() {
       return;
     }
 
-    await addTeamMember({
+    setIsSubmitting(true);
+    const success = await addTeamMember({
       username: formData.username,
       name: formData.name,
       password: formData.password,
       phone: formData.phone,
     });
+    setIsSubmitting(false);
 
-    setShowAddDialog(false);
-    setFormData({ username: '', name: '', password: '', phone: '' });
+    if (success) {
+      setShowAddDialog(false);
+      setFormData({ username: '', name: '', password: '', phone: '' });
+    }
   };
 
   const handleRemoveMember = (id: string, name: string) => {
@@ -156,10 +161,11 @@ export default function TeamManagement() {
           </div>
 
           <div className="flex gap-3">
-            <Button variant="mobileSecondary" size="full" onClick={() => setShowAddDialog(false)}>
+            <Button variant="mobileSecondary" size="full" onClick={() => setShowAddDialog(false)} disabled={isSubmitting}>
               取消
             </Button>
-            <Button variant="mobileAction" size="full" onClick={handleAddMember}>
+            <Button variant="mobileAction" size="full" onClick={handleAddMember} disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               确认添加
             </Button>
           </div>

@@ -31,6 +31,8 @@ export function ConsumptionDetailDialog({
     rooms,
     updateConsumptionStatus,
     updateBooking,            // ✅ 改这里：使用 updateBooking
+    teamMembers,
+    user
   } = useData();
 
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -42,6 +44,26 @@ export function ConsumptionDetailDialog({
   const displayRoomName = room 
       ? `${room.roomNo} - ${room.name}` 
       : (request?.roomName || request?.roomId || '未知房间');
+  
+  // Resolve Service Sales Name
+  let serviceSalesName = request?.serviceSalesName;
+  if (request && (!serviceSalesName || serviceSalesName === 'Unknown' || serviceSalesName === request.serviceSalesId)) {
+      const staff = teamMembers.find(t => t.id === request.serviceSalesId || t.staffNo === request.serviceSalesStaffNo);
+      if (staff) serviceSalesName = staff.name;
+      else if (user && (user.id.toString() === request.serviceSalesId || user.staffNo === request.serviceSalesStaffNo)) {
+          serviceSalesName = user.name;
+      }
+  }
+
+  // Resolve Booking Sales Name
+  let bookingSalesName = request?.bookingSalesName;
+  if (request && (!bookingSalesName && request.bookingSalesId)) {
+      const staff = teamMembers.find(t => t.id === request.bookingSalesId || t.staffNo === request.bookingSalesId);
+      if (staff) bookingSalesName = staff.name;
+      else if (user && (user.id.toString() === request.bookingSalesId || user.staffNo === request.bookingSalesId)) {
+          bookingSalesName = user.name;
+      }
+  }
 
   const isPending = request?.status === "pending";
   const isRejected = request?.status === "rejected";
@@ -141,12 +163,12 @@ export function ConsumptionDetailDialog({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">预定业务员</span>
-              <span className="font-medium">{request.bookingSalesName}</span>
+              <span className="font-medium">{bookingSalesName}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">服务业务员</span>
               <span className="font-medium">
-                {request.serviceSalesName} ({request.serviceSalesStaffNo})
+                {serviceSalesName} ({request.serviceSalesStaffNo})
               </span>
             </div>
             <div className="flex justify-between">

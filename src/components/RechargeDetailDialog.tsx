@@ -24,13 +24,23 @@ export function RechargeDetailDialog({
   requestId,
   showActions,
 }: RechargeDetailDialogProps) {
-  const { rechargeRequests, updateRechargeStatus } = useData();
+  const { rechargeRequests, updateRechargeStatus, teamMembers, user } = useData();
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [reason, setReason] = useState('');
 
   const request = rechargeRequests.find((r) => r.id === requestId);
 
   if (!request) return null;
+
+  // Resolve Sales Name
+  let salesName = request.salesName;
+  if (!salesName || salesName === 'Unknown' || salesName === request.salesId) {
+      const staff = teamMembers.find(t => t.id === request.salesId || t.staffNo === request.salesStaffNo);
+      if (staff) salesName = staff.name;
+      else if (user && (user.id.toString() === request.salesId || user.staffNo === request.salesStaffNo)) {
+          salesName = user.name;
+      }
+  }
 
   const handleApprove = () => {
     updateRechargeStatus(requestId, 'approved');
@@ -80,7 +90,7 @@ export function RechargeDetailDialog({
             <div className="flex justify-between">
               <span className="text-muted-foreground">申请人</span>
               <span className="font-medium">
-                {request.salesName} ({request.salesStaffNo})
+                {salesName} ({request.salesStaffNo})
               </span>
             </div>
             <div className="flex justify-between">
