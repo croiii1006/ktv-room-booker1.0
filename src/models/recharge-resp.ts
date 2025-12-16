@@ -121,6 +121,18 @@ export interface RechargeResp {
      * @memberof RechargeResp
      */
     updatedAt?: string;
+    /**
+     * 操作来源
+     * @type {string}
+     * @memberof RechargeResp
+     */
+    source?: RechargeRespSourceEnum;
+    /**
+     * 操作来源描述
+     * @type {string}
+     * @memberof RechargeResp
+     */
+    sourceDesc?: string;
 }
 
 /**
@@ -133,6 +145,14 @@ export enum RechargeRespStatusEnum {
     REJECTED = 'REJECTED',
     CANCELLED = 'CANCELLED',
     VOID = 'VOID'
+}
+/**
+    * @export
+    * @enum {string}
+    */
+export enum RechargeRespSourceEnum {
+    H5FRONT = 'H5_FRONT',
+    ADMINBACKEND = 'ADMIN_BACKEND'
 }
 
 

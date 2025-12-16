@@ -115,6 +115,18 @@ export interface ReservationResp {
      * @memberof ReservationResp
      */
     updatedAt?: string;
+    /**
+     * 操作来源
+     * @type {string}
+     * @memberof ReservationResp
+     */
+    source?: ReservationRespSourceEnum;
+    /**
+     * 操作来源描述
+     * @type {string}
+     * @memberof ReservationResp
+     */
+    sourceDesc?: string;
 }
 
 /**
@@ -126,6 +138,14 @@ export enum ReservationRespStatusEnum {
     APPROVED = 'APPROVED',
     REJECTED = 'REJECTED',
     CANCELLED = 'CANCELLED'
+}
+/**
+    * @export
+    * @enum {string}
+    */
+export enum ReservationRespSourceEnum {
+    H5FRONT = 'H5_FRONT',
+    ADMINBACKEND = 'ADMIN_BACKEND'
 }
 
 
