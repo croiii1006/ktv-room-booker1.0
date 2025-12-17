@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useData } from '@/contexts/DataContext';
 import { toast } from 'sonner';
+import { getStaffDetail } from '@/services/h5-service';
 
 interface LeaderBookingDetailDialogProps {
   open: boolean;
@@ -28,6 +29,28 @@ export function LeaderBookingDetailDialog({
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [reason, setReason] = useState('');
+  const [salesRealName, setSalesRealName] = useState('');
+
+  const booking = bookings.find((b) => b.id === bookingId);
+
+  React.useEffect(() => {
+    if (booking?.salesId) {
+      const id = parseInt(booking.salesId);
+      if (!isNaN(id)) {
+        getStaffDetail(id)
+          .then((res) => {
+            if (res.code === 200 && res.data) {
+              setSalesRealName(res.data.name || '');
+            }
+          })
+          .catch((err) => {
+            console.error('Failed to fetch staff name', err);
+          });
+      }
+    } else {
+      setSalesRealName('');
+    }
+  }, [booking?.salesId]);
 
   // Handle free cell view
   if (bookingId.startsWith('free_')) {
@@ -81,7 +104,6 @@ export function LeaderBookingDetailDialog({
     );
   }
 
-  const booking = bookings.find((b) => b.id === bookingId);
   const room = booking ? rooms.find((r) => r.id === booking.roomId) : null;
 
   if (!booking || !room) return null;
@@ -152,7 +174,7 @@ export function LeaderBookingDetailDialog({
             <div className="flex justify-between">
               <span className="text-muted-foreground">预定业务员</span>
               <span className="font-medium">
-                {booking.salesName} ({booking.salesStaffNo})
+                {salesRealName || booking.salesName} ({booking.salesStaffNo})
               </span>
             </div>
             {booking.serviceSalesName && (

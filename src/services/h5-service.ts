@@ -37,6 +37,12 @@ export const getTeamMembers = async (page?: number, size?: number): Promise<Page
   return response.data;
 };
 
+// 业务员详情
+export const getStaffDetail = async (id: number): Promise<ResultH5TeamStaffResp> => {
+  const response = await apiClient.get<ResultH5TeamStaffResp>(`/api/h5/team/staffs/${id}`);
+  return response.data;
+};
+
 // 新增团队成员
 export const createTeamMember = async (request: H5StaffCreateReq): Promise<ResultVoid> => {
   const response = await apiClient.post<ResultVoid>('/api/h5/team/staffs', request);

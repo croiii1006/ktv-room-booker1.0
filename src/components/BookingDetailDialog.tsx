@@ -34,9 +34,32 @@ export function BookingDetailDialog({
   const [imageUrl, setImageUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [salesRealName, setSalesRealName] = useState('');
 
   const booking = bookings.find((b) => b.id === bookingId);
   const room = booking ? rooms.find((r) => r.id === booking.roomId) : null;
+
+  React.useEffect(() => {
+     if (booking?.salesId) {
+       // If we already have a name that doesn't look like an ID (contains non-digits), maybe use it?
+       // But DataContext sets it to ID by default.
+       // So let's fetch.
+       const id = parseInt(booking.salesId);
+       if (!isNaN(id)) {
+         getStaffDetail(id)
+           .then((res) => {
+             if (res.code === 200 && res.data) {
+               setSalesRealName(res.data.name || '');
+             }
+           })
+           .catch((err) => {
+             console.error('Failed to fetch staff name', err);
+           });
+       }
+     } else {
+         setSalesRealName('');
+     }
+   }, [booking?.salesId]);
 
   if (!booking || !room) return null;
 
@@ -134,7 +157,7 @@ export function BookingDetailDialog({
             <div className="flex justify-between">
               <span className="text-muted-foreground">预定业务员</span>
               <span className="font-medium">
-                {booking.salesName} ({booking.salesStaffNo})
+                {salesRealName || booking.salesName} ({booking.salesStaffNo})
               </span>
             </div>
             {booking.serviceSalesName && (
