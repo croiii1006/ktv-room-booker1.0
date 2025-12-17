@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { BookingDialog } from '@/components/BookingDialog';
 import { BookingDetailDialog } from '@/components/BookingDetailDialog';
 import { LeaderBookingDetailDialog } from '@/components/LeaderBookingDetailDialog';
-import { useData, BookingStatus } from '@/contexts/DataContext';
+import { BookingStatus } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import {
@@ -18,11 +18,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { useStoreList, useRoomSchedule } from '@/queries/common-queries';
 
 export default function RoomMatrix() {
   const location = useLocation();
   const { user } = useAuth();
-  const { stores, getRoomsByStore, getBookingByRoomAndDate, fetchRoomSchedule } = useData();
+  
+  const { data: storeData } = useStoreList();
+  const stores = storeData?.data?.data || [];
+
   const [selectedCell, setSelectedCell] = useState<{ roomId: string; date: string } | null>(null);
   const [viewBookingId, setViewBookingId] = useState<string | null>(null);
   const [selectedStoreId, setSelectedStoreId] = useState('');
@@ -37,83 +41,98 @@ export default function RoomMatrix() {
   const dates = Array.from({ length: 7 }, (_, i) => addDays(startDate, i));
   const endDate = dates[dates.length - 1];
 
-  // Fetch room schedule when store or dates change
-  React.useEffect(() => {
-    // If user has a storeId, use it by default if selectedStoreId is not set (or is initial default)
-    // Actually, we should initialize selectedStoreId with user's storeId if available.
-    
-    if (selectedStoreId) {
-      const startStr = format(startDate, 'yyyy-MM-dd');
-      const endStr = format(endDate, 'yyyy-MM-dd');
-      fetchRoomSchedule(selectedStoreId, startStr, endStr);
-    }
-  }, [selectedStoreId, weekOffset, fetchRoomSchedule]);
-
   // Set default store based on user profile
   React.useEffect(() => {
     if (user?.storeId && stores.length > 0) {
        // Only set if selectedStoreId is still the default fallback 'store1' which might not be valid 
        // or if we want to enforce user's store on load.
-       // Let's check if current selectedStoreId is valid in stores list.
        const currentStore = stores.find(s => s.id === selectedStoreId);
-       if (!currentStore || (selectedStoreId === 'store1' && user.storeId.toString() !== 'store1')) {
+       if (!currentStore && !selectedStoreId) {
+           setSelectedStoreId(user.storeId.toString());
+       } else if (selectedStoreId === 'store1' && user.storeId.toString() !== 'store1') {
+           // Fix for potential legacy default
            setSelectedStoreId(user.storeId.toString());
        }
     } else if (stores.length > 0 && (!selectedStoreId || selectedStoreId === 'store1')) {
         // Fallback to first available store if no user store
-        setSelectedStoreId(stores[0].id);
+        setSelectedStoreId(stores[0].id?.toString());
     }
-  }, [user, stores]);
+  }, [user, stores, selectedStoreId]);
+
+  const { data: scheduleData, isLoading } = useRoomSchedule(
+    format(startDate, 'yyyy-MM-dd'), 
+    format(endDate, 'yyyy-MM-dd'), 
+    selectedStoreId ? parseInt(selectedStoreId) : undefined
+  );
+
+  const schedule = scheduleData?.data?.data || {}; 
+  // Transform schedule to rooms list with nested schedule
+  // Assuming API returns list of rooms with their schedules
+  // But wait, h5Api.schedule returns RoomScheduleResp[] which contains RoomInfo and list of DaySchedule
+  // We need to map this.
+  const rooms = schedule.rooms || []; 
 
   // Max 8 weeks (2 months) into the future
   const maxWeekOffset = 8;
 
-  const rooms = getRoomsByStore(selectedStoreId);
+  const getBookingByRoomAndDate = (roomId: string, date: string) => {
+      const room = rooms.find(r => r.id?.toString() === roomId);
+      if (!room || !room.schedules) return null;
+      // schedule date format: yyyy-MM-dd
+      return room.schedules.find(s => s.date === date);
+  };
 
   const handleCellClick = (roomId: string, date: string) => {
     const booking = getBookingByRoomAndDate(roomId, date);
-    if (booking) {
-      setViewBookingId(booking.id);
+    if (booking && booking.status !== 'FREE') { // Assuming FREE is default or null means free
+      setViewBookingId(booking.bookingId?.toString() || '');
     } else if (!isLeader) {
       // Only salesperson can create bookings
       setSelectedCell({ roomId, date });
     } else {
-      // Leader can view free cell details too
+      // Leader can view free cell details too (maybe not needed? or just showing room info)
+      // For now, if free and leader, maybe show nothing or room detail?
+      // Keeping existing logic:
       setViewBookingId(`free_${roomId}_${date}`);
     }
   };
 
-  const getCellStatus = (roomId: string, date: string): BookingStatus => {
+  const getCellStatus = (roomId: string, date: string): string => {
     const booking = getBookingByRoomAndDate(roomId, date);
     return booking?.status || 'free';
   };
 
-  const getStatusColor = (status: BookingStatus) => {
-    switch (status) {
+  const getStatusColor = (status: string) => {
+    // Map API status to UI colors
+    switch (status.toLowerCase()) {
       case 'free':
         return 'bg-muted hover:bg-muted/80';
       case 'pending':
         return 'bg-status-pending/30 border-2 border-status-pending';
       case 'booked':
+      case 'approved':
         return 'bg-status-booked/80 text-white';
       case 'finished':
         return 'bg-status-finished/80 text-white';
       case 'cancelled':
+      case 'rejected':
         return 'bg-muted border-2 border-status-rejected';
       default:
         return 'bg-muted';
     }
   };
 
-  const getStatusLabel = (status: BookingStatus) => {
-    switch (status) {
+  const getStatusLabel = (status: string) => {
+    switch (status.toLowerCase()) {
       case 'pending':
         return '待审';
       case 'booked':
+      case 'approved':
         return '已订';
       case 'finished':
         return '完成';
       case 'cancelled':
+      case 'rejected':
         return '已取消';
       default:
         return '';
@@ -128,11 +147,11 @@ export default function RoomMatrix() {
       <div className="px-4 py-3 flex items-center justify-between bg-card border-b border-border">
         <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
           <SelectTrigger className="w-32">
-            <SelectValue />
+            <SelectValue placeholder="选择门店" />
           </SelectTrigger>
           <SelectContent>
             {stores.map((store) => (
-              <SelectItem key={store.id} value={store.id}>
+              <SelectItem key={store.id} value={store.id?.toString() || ''}>
                 {store.name}
               </SelectItem>
             ))}
@@ -184,6 +203,11 @@ export default function RoomMatrix() {
 
       {/* Matrix Table */}
       <div className="p-4 overflow-x-auto">
+        {isLoading ? (
+             <div className="text-center py-12">
+             <p className="text-muted-foreground">加载中...</p>
+           </div>
+        ) : (
         <table className="w-full min-w-[600px] border-collapse">
           <thead>
             <tr>
@@ -205,18 +229,18 @@ export default function RoomMatrix() {
             {rooms.map((room) => (
               <tr key={room.id}>
                 <td className="p-2 text-sm font-medium text-foreground bg-card border border-border sticky left-0 z-10">
-                  <div>{room.name}</div>
+                  <div>{room.roomNo}</div>
                   <div className="text-xs text-muted-foreground">¥{room.price}</div>
                 </td>
                 {dates.map((date) => {
                   const dateStr = format(date, 'yyyy-MM-dd');
-                  const status = getCellStatus(room.id, dateStr);
+                  const status = getCellStatus(room.id?.toString() || '', dateStr);
                   const label = getStatusLabel(status);
                   return (
                     <td
                       key={dateStr}
                       className="p-1 border border-border"
-                      onClick={() => handleCellClick(room.id, dateStr)}
+                      onClick={() => handleCellClick(room.id?.toString() || '', dateStr)}
                     >
                       <div
                         className={cn(
@@ -233,6 +257,7 @@ export default function RoomMatrix() {
             ))}
           </tbody>
         </table>
+        )}
       </div>
 
       {/* Booking Dialog - Only for salesperson */}
@@ -256,7 +281,7 @@ export default function RoomMatrix() {
       ) : (
         <BookingDetailDialog
           open={!!viewBookingId}
-          onClose={() => setViewBookingId(null)}
+          onOpenChange={(open) => !open && setViewBookingId(null)}
           bookingId={viewBookingId || ''}
         />
       )}

@@ -15,17 +15,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { toast } from 'sonner';
 
-import { uploadFile } from '@/services/h5-service';
+import { uploadFile, getStaffDetail, getMemberDetail, getReservationDetail } from '@/services/h5-service';
 
 interface BookingDetailDialogProps {
   open: boolean;
-  onClose: () => void;
-  bookingId: string;
+  onOpenChange: (open: boolean) => void;
+  bookingId: string | null;
+  isReviewMode?: boolean;
 }
 
 export function BookingDetailDialog({
   open,
-  onClose,
+  onOpenChange,
   bookingId,
 }: BookingDetailDialogProps) {
   const { user } = useAuth();
@@ -35,9 +36,45 @@ export function BookingDetailDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [salesRealName, setSalesRealName] = useState('');
+  const [customerRealName, setCustomerRealName] = useState('');
+  const [fetchedBooking, setFetchedBooking] = useState<any>(null);
 
-  const booking = bookings.find((b) => b.id === bookingId);
+  const localBooking = bookings.find((b) => b.id === bookingId);
+  // Use fetched booking if available, otherwise fallback to local context
+  const booking = fetchedBooking ? {
+      ...localBooking, // preserve local fields if needed
+      id: fetchedBooking.id?.toString(),
+      roomId: fetchedBooking.roomId?.toString(),
+      date: fetchedBooking.reserveDate,
+      customerId: fetchedBooking.memberId?.toString(),
+      customerName: fetchedBooking.memberName,
+      price: 0, // Not in detail?
+      status: (fetchedBooking.status?.toLowerCase() || 'pending'),
+      salesId: fetchedBooking.staffId?.toString(),
+      salesName: fetchedBooking.applyStaffName,
+      salesStaffNo: '', // Not in detail?
+      createdAt: fetchedBooking.createdAt,
+      serviceSalesName: fetchedBooking.serviceStaffName,
+      serviceSalesStaffNo: '',
+  } : localBooking;
+  
   const room = booking ? rooms.find((r) => r.id === booking.roomId) : null;
+
+  React.useEffect(() => {
+     if (open && bookingId) {
+         // Fetch fresh detail
+         const id = parseInt(bookingId);
+         if (!isNaN(id)) {
+             getReservationDetail(id).then(res => {
+                 if (res.code === 200 && res.data) {
+                     setFetchedBooking(res.data);
+                 }
+             }).catch(err => console.error("Fetch booking detail failed", err));
+         }
+     } else {
+         setFetchedBooking(null);
+     }
+  }, [open, bookingId]);
 
   React.useEffect(() => {
      if (booking?.salesId) {
@@ -59,7 +96,25 @@ export function BookingDetailDialog({
      } else {
          setSalesRealName('');
      }
-   }, [booking?.salesId]);
+
+
+    //  if (booking?.customerId) {
+    //     const id = parseInt(booking.customerId);
+    //     if (!isNaN(id)) {
+    //         getMemberDetail(id)
+    //         .then((res) => {
+    //             if (res.code === 200 && res.data) {
+    //                 setCustomerRealName(res.data.name || '');
+    //             }
+    //         })
+    //         .catch((err) => {
+    //             console.error('Failed to fetch member name', err);
+    //         });
+    //     }
+    //  } else {
+    //      setCustomerRealName('');
+    //  }
+   }, [booking?.salesId, booking?.customerId]);
 
   if (!booking || !room) return null;
 
@@ -100,7 +155,7 @@ export function BookingDetailDialog({
     if (success) {
       setShowConsumptionForm(false);
       setImageUrl('');
-      onClose();
+      onOpenChange(false);
     }
   };
 
@@ -126,7 +181,7 @@ export function BookingDetailDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm mx-4 rounded-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>订单详情</DialogTitle>
@@ -148,7 +203,7 @@ export function BookingDetailDialog({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">客户</span>
-              <span className="font-medium">{booking.customerName}</span>
+              <span className="font-medium">{booking.customerName || customerRealName}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">价格</span>
@@ -157,7 +212,7 @@ export function BookingDetailDialog({
             <div className="flex justify-between">
               <span className="text-muted-foreground">预定业务员</span>
               <span className="font-medium">
-                {salesRealName || booking.salesName} ({booking.salesStaffNo})
+                {salesRealName || booking.salesName}
               </span>
             </div>
             {booking.serviceSalesName && (
@@ -226,7 +281,7 @@ export function BookingDetailDialog({
                 已到店消费申请
               </Button>
             )}
-            <Button variant="mobileSecondary" size="full" onClick={onClose}>
+            <Button variant="mobileSecondary" size="full" onClick={() => onOpenChange(false)}>
               关闭
             </Button>
           </div>

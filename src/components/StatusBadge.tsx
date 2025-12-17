@@ -17,7 +17,8 @@ const statusConfig: Record<BookingStatus, { label: string; className: string }> 
 };
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const config = statusConfig[status];
+  const normalizedStatus = (status || 'free').toLowerCase() as BookingStatus;
+  const config = statusConfig[normalizedStatus] || { label: status, className: 'bg-muted text-muted-foreground' };
   
   return (
     <span className={cn(

@@ -9,12 +9,12 @@ import { useData } from '@/contexts/DataContext';
 
 export default function ConsumptionApproval() {
   const { user } = useAuth();
-  const { getPendingConsumptionRequests, fetchPendingRequests, rooms, teamMembers } = useData();
+  const { consumptionRequests, rooms, teamMembers, isLoading } = useData();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    fetchPendingRequests();
-  }, [fetchPendingRequests]);
+  const sortedRequests = consumptionRequests
+    .filter(r => r.status === 'pending')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   // Only allow leader
   if (!user || user.role !== 'leader') {
@@ -28,48 +28,34 @@ export default function ConsumptionApproval() {
     );
   }
 
-  const visibleRequests = getPendingConsumptionRequests(user.staffNo);
-  const sortedRequests = [...visibleRequests].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-
   return (
     <div className="min-h-screen bg-background">
       <PageHeader title="确认消费申请审核" />
 
       <main className="p-4 space-y-3">
-        {sortedRequests.length === 0 ? (
+        {isLoading ? (
+             <div className="text-center py-12">
+             <p className="text-muted-foreground">加载中...</p>
+           </div>
+        ) : sortedRequests.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">暂无待审核消费确认申请</p>
           </div>
         ) : (
           sortedRequests.map((request) => {
-            // Find room
-            const room = rooms.find((r) => r.id === request.roomId);
-            const roomDisplay = room 
-                ? `${room.roomNo} - ${room.name}` 
-                : (request.roomName || request.roomId || '未知房间');
-
-            // Resolve Service Sales Name
-            let serviceSalesName = request.serviceSalesName;
-            if (!serviceSalesName || serviceSalesName === 'Unknown' || serviceSalesName === request.serviceSalesId) {
-                const staff = teamMembers.find(t => t.id === request.serviceSalesId || t.staffNo === request.serviceSalesStaffNo);
-                if (staff) serviceSalesName = staff.name;
-                else if (user && (user.id.toString() === request.serviceSalesId || user.staffNo === request.serviceSalesStaffNo)) {
-                    serviceSalesName = user.name;
-                }
-            }
-
-            // Resolve Booking Sales Name (if ID is available but name is missing)
-            // Note: DataContext might need to be enriched to link booking sales info more robustly if missing.
-            // For now, if it's missing, we leave it empty or try to find it if we have the ID.
+            const room = rooms.find(r => r.id === request.roomId);
+            const roomDisplay = room ? `${room.roomNo} - ${room.name}` : (request.roomName || request.roomId || '未知房间');
+            const dateDisplay = request.createdAt ? format(new Date(request.createdAt), 'MM/dd EEEE', { locale: zhCN }) : '-';
+            
+            const serviceStaff = teamMembers.find(t => t.id === request.serviceSalesId || t.staffNo === request.serviceSalesStaffNo);
+            const serviceSalesName = serviceStaff?.name || (request.serviceSalesName !== 'Unknown' ? request.serviceSalesName : '未知');
+            
             let bookingSalesName = request.bookingSalesName;
-            if (!bookingSalesName && request.bookingSalesId) {
-                const staff = teamMembers.find(t => t.id === request.bookingSalesId || t.staffNo === request.bookingSalesId);
-                if (staff) bookingSalesName = staff.name;
-                else if (user && (user.id.toString() === request.bookingSalesId || user.staffNo === request.bookingSalesId)) {
-                    bookingSalesName = user.name;
-                }
+            if (!bookingSalesName || bookingSalesName === 'Unknown') {
+                 const bookingStaff = teamMembers.find(t => t.id === request.bookingSalesId || t.staffNo === request.bookingSalesId);
+                 if (bookingStaff) {
+                     bookingSalesName = bookingStaff.name;
+                 }
             }
             
             return (
@@ -84,7 +70,7 @@ export default function ConsumptionApproval() {
                     {roomDisplay} - {request.customerName}
                   </h3>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    {request.date ? format(new Date(request.date), 'MM/dd EEEE', { locale: zhCN }) : ''}
+                    {dateDisplay}
                   </p>
                 </div>
                 <RequestStatusBadge status={request.status} />
@@ -98,7 +84,7 @@ export default function ConsumptionApproval() {
                 </div>
               )}
               <div className="text-xs text-muted-foreground mt-1">
-                {request.createdAt}
+                {request.createdAt ? format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm') : ''}
               </div>
             </div>
             );
@@ -108,7 +94,7 @@ export default function ConsumptionApproval() {
 
       <ConsumptionDetailDialog
         open={!!selectedId}
-        onClose={() => setSelectedId(null)}
+        onOpenChange={(open) => !open && setSelectedId(null)}
         requestId={selectedId || ''}
         showActions={true}
       />

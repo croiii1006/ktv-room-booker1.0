@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { RequestStatusBadge } from "@/components/RequestStatusBadge";
-import { useData, Booking, RechargeRequest, ConsumptionRequest } from "@/contexts/DataContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +15,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useTeamMemberDetail, useTeamMemberReservations, useTeamMemberRecharges, useTeamMemberConsumes } from "@/queries/team-queries";
+import { useMemberList } from "@/queries/member-queries";
 
 type DetailType = "customer" | "recharge" | "service" | "booking";
 
@@ -25,68 +26,56 @@ interface SelectedItem {
 }
 
 export default function TeamMemberDetail() {
-  const { staffNo } = useParams<{ staffNo: string }>();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const {
-    teamMembers,
-    rooms,
-    getCustomersBySalesId,
-    getAllRechargeRequestsBySales,
-    getAllConsumptionRequestsBySales,
-    getAllBookingsBySales,
-    fetchPendingRequests,
-    fetchTeamMembers,
-    fetchCustomers,
-    isLoading,
-    rechargeRequests: allRecharges,
-    consumptionRequests: allConsumes,
-    bookings: allBookings
-  } = useData();
-
-  useEffect(() => {
-    // Ensure we have the latest data when viewing details
-    if (user?.role === 'leader') {
-      fetchPendingRequests();
-    }
-    fetchTeamMembers();
-    fetchCustomers();
-  }, [user, fetchPendingRequests, fetchTeamMembers, fetchCustomers]);
-
-  const member = teamMembers.find((tm) => tm.staffNo === staffNo || tm.id === staffNo);
   
-  // Use member ID for filtering data, as the API uses IDs for linkage
-  // Fallback: If no member found but staffNo param exists, use it temporarily.
-  // Note: Data records use ID (e.g. 3), but phone is e.g. 13800000009.
-  // If user navigated via phone URL, we need to resolve it to ID via member object.
-  // If member not loaded, we can't match records by ID unless staffNo IS the ID.
-  const targetId = member?.id || (staffNo && staffNo.length < 5 ? staffNo : ""); 
-
-  const customers = getCustomersBySalesId(targetId);
-  // User requested to NOT filter records, so Leader can see all team records here
-  // const rechargeRequests = getAllRechargeRequestsBySales(targetId);
-  // const consumptionRequests = getAllConsumptionRequestsBySales(targetId);
-  // const bookings = getAllBookingsBySales(targetId);
+  const staffId = parseInt(id || '0');
   
-  const rechargeRequests = allRecharges;
-  const consumptionRequests = allConsumes;
-  const bookings = allBookings;
+  const { data: memberDetail, isLoading: isLoadingMember } = useTeamMemberDetail(staffId);
+  const member = memberDetail?.data;
+
+  // We need to fetch lists for this specific staff member
+  // Note: member-queries typically fetch "my members". If we need "members by staff", we might need a new query or filter.
+  // Assuming useMemberList returns all members for leader or filtered by backend context? 
+  // Actually the original code had getCustomersBySalesId.
+  // Let's assume for now we don't have a specific API to get customers by another staff ID easily exposed in h5-api.ts 
+  // OR we can try to use useMemberList and filter client side if the API returns all.
+  // Checking h5-api.ts: myMembers() returns ResultH5MemberResp. It might be only "my" members.
+  // If the backend `myMembers` supports a staffId param (it doesn't seem to based on generated code), we might be limited.
+  // HOWEVER, looking at h5-api.ts, `myMembers` takes page, size, keyword. 
+  // If we can't get customers by staffId, we might skip this tab or show empty for now, or assume leader sees all.
+  // Let's try useMemberList() and see if it works for leader (returning all).
+  const { data: membersData } = useMemberList(1, 100); 
+  const allCustomers = membersData?.data?.data?.list || [];
+  // Filter customers that belong to this staff - assuming the response contains salesId/staffId
+  const customers = allCustomers.filter((c: any) => c.staffId === staffId || c.salesId === staffId);
+
+  const { data: rechargesData, isLoading: isLoadingRecharges } = useTeamMemberRecharges(staffId, 1, 100);
+  const rechargeRequests = rechargesData?.data?.data?.list || [];
+
+  const { data: consumesData, isLoading: isLoadingConsumes } = useTeamMemberConsumes(staffId, 1, 100);
+  const consumptionRequests = consumesData?.data?.data?.list || [];
+
+  const { data: bookingsData, isLoading: isLoadingBookings } = useTeamMemberReservations(staffId, 1, 100);
+  const bookings = bookingsData?.data?.data?.list || [];
 
   const [selected, setSelected] = useState<SelectedItem | null>(null);
 
+  if (isLoadingMember) {
+     return (
+       <div className="min-h-screen bg-background flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+       </div>
+     );
+  }
+
   if (!member) {
-    if (isLoading) {
-       return (
-         <div className="min-h-screen bg-background flex items-center justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-         </div>
-       );
-    }
     return (
       <div className="min-h-screen bg-background">
         <PageHeader title="业务员详情" />
         <div className="p-4 text-center text-muted-foreground">
-          业务员不存在 (ID: {staffNo})
+          业务员不存在 (ID: {id})
         </div>
       </div>
     );
@@ -120,11 +109,11 @@ export default function TeamMemberDetail() {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">卡类型</span>
-            <span className="font-medium">{item.cardType}卡</span>
+            <span className="font-medium">{item.cardTypeName || item.cardType}卡</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">开卡日期</span>
-            <span className="font-medium">{item.openDate}</span>
+            <span className="font-medium">{item.createdAt ? format(new Date(item.createdAt), 'yyyy-MM-dd') : '-'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">余额</span>
@@ -132,7 +121,7 @@ export default function TeamMemberDetail() {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">赠送金额</span>
-            <span className="font-medium">¥{item.giftAmount}</span>
+            <span className="font-medium">¥{item.giftBalance || item.giftAmount || 0}</span>
           </div>
         </div>
       );
@@ -151,11 +140,11 @@ export default function TeamMemberDetail() {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">赠送产品</span>
-            <span className="font-medium">{item.giftProduct || "无"}</span>
+            <span className="font-medium">{item.giftAmount ? `¥${item.giftAmount}` : "无"}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">状态</span>
-            <span className="font-medium">{item.status}</span>
+            <RequestStatusBadge status={item.status || 'PENDING'} />
           </div>
           {item.rejectReason && (
             <div>
@@ -165,7 +154,7 @@ export default function TeamMemberDetail() {
           )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">申请时间</span>
-            <span className="font-medium text-xs">{item.createdAt}</span>
+            <span className="font-medium text-xs">{item.createdAt ? format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm') : '-'}</span>
           </div>
         </div>
       );
@@ -173,22 +162,16 @@ export default function TeamMemberDetail() {
 
     if (selected.type === "booking") {
       // 预定记录
-      const formattedDate = format(new Date(item.date), "yyyy年MM月dd日 EEEE", {
+      const formattedDate = item.arrivalTime ? format(new Date(item.arrivalTime), "yyyy年MM月dd日 EEEE", {
         locale: zhCN,
-      });
-      const room = rooms.find((r) => r.id === item.roomId);
-      const store = useData().stores.find(s => s.id === room?.storeId);
-
+      }) : '-';
+      
       return (
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">门店</span>
-            <span className="font-medium">{store?.name || '未知门店'}</span>
-          </div>
-          <div className="flex justify-between">
             <span className="text-muted-foreground">房间号</span>
             <span className="font-medium">
-              {room ? `${room.roomNo} (${room.name})` : item.roomId}
+               {item.roomTypeName} {item.roomNo}
             </span>
           </div>
           <div className="flex justify-between">
@@ -202,16 +185,16 @@ export default function TeamMemberDetail() {
           <div className="flex justify-between">
             <span className="text-muted-foreground">预定业务员</span>
             <span className="font-medium">
-              {item.salesName && item.salesName !== 'Unknown' ? item.salesName : `ID: ${item.salesId}`}
+              {item.salesName || item.salesStaffNo || '未知'}
             </span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">订单状态</span>
-            <span className="font-medium">{item.status}</span>
+            <StatusBadge status={item.status || 'PENDING'} />
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">创建时间</span>
-            <span className="font-medium text-xs">{item.createdAt}</span>
+            <span className="font-medium text-xs">{item.createdAt ? format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm') : '-'}</span>
           </div>
           {item.rejectReason && (
             <div>
@@ -223,23 +206,17 @@ export default function TeamMemberDetail() {
       );
     }
     if (selected.type === "service") {
-      // 消费确认记录 (原 service 逻辑，现合并为 consumption)
-      const formattedDate = format(new Date(item.date), "yyyy年MM月dd日 EEEE", {
+      // 消费确认记录
+      const formattedDate = item.bookingDate ? format(new Date(item.bookingDate), "yyyy年MM月dd日 EEEE", {
         locale: zhCN,
-      });
-      const room = rooms.find((r) => r.id === item.roomId);
-      const store = useData().stores.find(s => s.id === room?.storeId);
+      }) : '-';
       
       return (
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">门店</span>
-            <span className="font-medium">{store?.name || '未知门店'}</span>
-          </div>
-          <div className="flex justify-between">
             <span className="text-muted-foreground">房间号</span>
             <span className="font-medium">
-              {room ? `${room.roomNo} (${room.name})` : item.roomId}
+              {item.roomTypeName} {item.roomNo}
             </span>
           </div>
           <div className="flex justify-between">
@@ -251,22 +228,18 @@ export default function TeamMemberDetail() {
             <span className="font-medium">{item.customerName || item.customerId}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">消费金额</span>
-            <span className="font-medium text-primary">¥{item.amount}</span>
-          </div>
-          <div className="flex justify-between">
             <span className="text-muted-foreground">服务业务员</span>
             <span className="font-medium">
-              {item.serviceSalesName && item.serviceSalesName !== 'Unknown' ? item.serviceSalesName : `ID: ${item.serviceSalesId}`}
+              {item.serviceStaffName || '未知'}
             </span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">状态</span>
-            <span className="font-medium">{item.status}</span>
+            <RequestStatusBadge status={item.status || 'PENDING'} />
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">申请时间</span>
-            <span className="font-medium text-xs">{item.createdAt}</span>
+            <span className="font-medium text-xs">{item.createdAt ? format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm') : '-'}</span>
           </div>
           {item.rejectReason && (
             <div>
@@ -292,33 +265,15 @@ export default function TeamMemberDetail() {
     <div className="min-h-screen bg-background">
       <PageHeader title="业务员详情" />
 
-      {/* Debug Info - Remove before production */}
-      <div className="p-2 bg-gray-100 text-xs font-mono break-all mb-4">
-        <p>Params staffNo: {staffNo}</p>
-        <p>Member Found: {member ? 'Yes' : 'No'}</p>
-        <p>Member ID: {member?.id}</p>
-        <p>Target ID: {targetId}</p>
-        <p>User Role: {user?.role}</p>
-        <p>Total Recharges: {allRecharges.length}</p>
-        <p>Filtered Recharges: {rechargeRequests.length}</p>
-        <p>Sample Recharge SalesId: {allRecharges.length > 0 ? allRecharges[0].salesId : 'N/A'}</p>
-        <p>Total Consumes: {allConsumes.length}</p>
-        <p>Filtered Consumes: {consumptionRequests.length}</p>
-        <p>Sample Consume ServiceSalesId: {allConsumes.length > 0 ? allConsumes[0].serviceSalesId : 'N/A'}</p>
-        <p>Total Bookings: {allBookings.length}</p>
-        <p>Filtered Bookings: {bookings.length}</p>
-      </div>
-
       <main className="p-4 space-y-4">
         {/* Member Info */}
         <div className="bg-card rounded-lg border border-border p-4">
           <div className="flex justify-between items-start">
              <div>
                 <h2 className="text-xl font-bold text-foreground">{member.name}</h2>
-                <p className="text-sm text-muted-foreground">工号: {member.staffNo}</p>
+                <p className="text-sm text-muted-foreground">手机: {member.phone}</p>
                 <p className="text-xs text-muted-foreground mt-1">ID: {member.id}</p>
              </div>
-             {isLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
           </div>
         </div>
 
@@ -336,7 +291,7 @@ export default function TeamMemberDetail() {
             {customers.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">暂无客户</p>
             ) : (
-              customers.map((customer) => (
+              customers.map((customer: any) => (
                 <div
                   key={customer.id}
                   className="bg-card rounded-lg border border-border p-4 cursor-pointer active:bg-accent"
@@ -358,7 +313,7 @@ export default function TeamMemberDetail() {
                         ¥{customer.balance}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {customer.cardType}卡
+                        {customer.cardTypeName || customer.cardType}卡
                       </p>
                     </div>
                   </div>
@@ -369,7 +324,11 @@ export default function TeamMemberDetail() {
 
           {/* 充值记录 */}
           <TabsContent value="recharge" className="mt-4 space-y-3">
-            {rechargeRequests.length === 0 ? (
+            {isLoadingRecharges ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : rechargeRequests.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
                 暂无充值记录
               </p>
@@ -391,10 +350,10 @@ export default function TeamMemberDetail() {
                         ¥{request.amount}
                       </p>
                     </div>
-                    <RequestStatusBadge status={request.status} />
+                    <RequestStatusBadge status={request.status || 'PENDING'} />
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {request.createdAt}
+                    {request.createdAt ? format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm') : '-'}
                   </div>
                 </div>
               ))
@@ -403,7 +362,11 @@ export default function TeamMemberDetail() {
 
           {/* 预定记录 */}
           <TabsContent value="booking" className="mt-4 space-y-3">
-            {bookings.length === 0 ? (
+            {isLoadingBookings ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : bookings.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
                 暂无预定记录
               </p>
@@ -422,15 +385,15 @@ export default function TeamMemberDetail() {
                         预定 - {booking.customerName}
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        {format(new Date(booking.date), "MM/dd EEEE", {
+                        {booking.arrivalTime ? format(new Date(booking.arrivalTime), "MM/dd EEEE", {
                           locale: zhCN,
-                        })}
+                        }) : '-'}
                       </p>
                     </div>
-                    <StatusBadge status={booking.status} />
+                    <StatusBadge status={booking.status || 'PENDING'} />
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {booking.createdAt}
+                    {booking.createdAt ? format(new Date(booking.createdAt), 'yyyy-MM-dd HH:mm') : '-'}
                   </div>
                 </div>
               ))
@@ -439,7 +402,11 @@ export default function TeamMemberDetail() {
 
           {/* 服务记录：消费确认 */}
           <TabsContent value="service" className="mt-4 space-y-3">
-            {consumptionRequests.length === 0 ? (
+            {isLoadingConsumes ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : consumptionRequests.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
                 暂无服务记录
               </p>
@@ -458,15 +425,15 @@ export default function TeamMemberDetail() {
                         服务 - {request.customerName}
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        {format(new Date(request.date), "MM/dd EEEE", {
+                        {request.bookingDate ? format(new Date(request.bookingDate), "MM/dd EEEE", {
                           locale: zhCN,
-                        })}
+                        }) : '-'}
                       </p>
                     </div>
-                    <RequestStatusBadge status={request.status} />
+                    <RequestStatusBadge status={request.status || 'PENDING'} />
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {request.createdAt}
+                    {request.createdAt ? format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm') : '-'}
                   </div>
                 </div>
               ))

@@ -25,8 +25,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // 从 localStorage 加载已保存的用户和 token
 const loadSavedUser = (): User | null => {
+  const token = localStorage.getItem('token');
   const saved = localStorage.getItem('ktv_user');
-  return saved ? JSON.parse(saved) : null;
+  if (!token || !saved) return null;
+  return JSON.parse(saved);
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {

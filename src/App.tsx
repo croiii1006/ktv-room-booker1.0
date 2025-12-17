@@ -130,7 +130,7 @@ const App = () => (
                 }
               />
               <Route
-                path="/team/:staffNo"
+                path="/team/:id"
                 element={
                   <ProtectedRoute>
                     <TeamMemberDetail />

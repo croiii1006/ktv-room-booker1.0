@@ -3,14 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { useAuth } from '@/contexts/AuthContext';
-import { useData } from '@/contexts/DataContext';
+import { useMemberList } from '@/queries/member-queries';
 
 export default function CustomerList() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { getCustomersByStaff } = useData();
+  // Using React Query hook
+  const { data: memberData, isLoading, error } = useMemberList();
 
-  const customers = user ? getCustomersByStaff(user.staffNo) : [];
+  const customers = memberData?.data?.data?.list || [];
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-background p-4 flex justify-center pt-20">加载中...</div>;
+  }
+
+  if (error) {
+    return <div className="min-h-screen bg-background p-4 flex justify-center pt-20">加载失败</div>;
+  }
 
   return (
     <div className="min-h-screen bg-background">

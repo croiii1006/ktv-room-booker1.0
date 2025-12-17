@@ -1,49 +1,36 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 import { PageHeader } from '@/components/PageHeader';
 import { RequestStatusBadge } from '@/components/RequestStatusBadge';
 import { RechargeDetailDialog } from '@/components/RechargeDetailDialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { useData } from '@/contexts/DataContext';
+import { useRechargeList } from '@/queries/recharge-queries';
 
 export default function RechargeRequestList() {
   const { user } = useAuth();
-  const { getRechargeRequestsBySales, fetchMyRequests } = useData();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    // Only fetch if requests are empty to avoid double fetching on mount
-    // or rely on context to handle fetching.
-    // However, if we just navigated here after a create, we want to ensure freshness.
-    // fetchMyRequests() is already called in DataContext on user change, but manual refresh is good.
-    fetchMyRequests();
-  }, [fetchMyRequests]);
-
-  const requests = getRechargeRequestsBySales(user?.id.toString() || user?.staffNo || '');
-  
-  // Sort by createdAt descending
-  const sortedRequests = [...requests].sort((a, b) => {
-    // Handle potential null/undefined dates
-    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return dateB - dateA;
-  });
+  const { data: rechargeData, isLoading } = useRechargeList();
+  const requests = rechargeData?.data?.data?.list || [];
 
   return (
     <div className="min-h-screen bg-background">
       <PageHeader title="充值申请" />
 
       <main className="p-4 space-y-3">
-        {sortedRequests.length === 0 ? (
+        {isLoading ? (
+            <div className="text-center py-12">
+            <p className="text-muted-foreground">加载中...</p>
+          </div>
+        ) : requests.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">暂无充值申请记录</p>
           </div>
         ) : (
-          sortedRequests.map((request) => (
+          requests.map((request) => (
             <div
               key={request.id}
-              onClick={() => setSelectedId(request.id)}
+              onClick={() => setSelectedId(request.id?.toString() || '')}
               className="bg-card rounded-lg border border-border p-4 active:bg-accent transition-colors cursor-pointer animate-fade-in"
             >
               <div className="flex items-start justify-between mb-2">
@@ -55,15 +42,15 @@ export default function RechargeRequestList() {
                     ¥{request.amount.toLocaleString()}
                   </p>
                 </div>
-                <RequestStatusBadge status={request.status} />
+                <RequestStatusBadge status={request.status || 'PENDING'} />
               </div>
-              {request.giftProduct && (
+              {request.giftAmount > 0 && (
                 <p className="text-sm text-muted-foreground mb-2">
-                  赠送: {request.giftProduct}
+                  赠送: ¥{request.giftAmount}
                 </p>
               )}
               <div className="text-xs text-muted-foreground">
-                {request.createdAt}
+                {request.createdAt ? format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm') : ''}
               </div>
             </div>
           ))

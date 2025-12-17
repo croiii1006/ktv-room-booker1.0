@@ -8,6 +8,8 @@ interface RequestStatusBadgeProps {
 }
 
 export function RequestStatusBadge({ status, className }: RequestStatusBadgeProps) {
+  const normalizedStatus = (status || 'pending').toLowerCase() as RequestStatus;
+
   const getStatusConfig = (status: RequestStatus) => {
     switch (status) {
       case 'pending':
@@ -33,7 +35,7 @@ export function RequestStatusBadge({ status, className }: RequestStatusBadgeProp
     }
   };
 
-  const config = getStatusConfig(status);
+  const config = getStatusConfig(normalizedStatus);
 
   return (
     <span

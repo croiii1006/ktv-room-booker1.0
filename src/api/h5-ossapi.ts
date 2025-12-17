@@ -12,12 +12,13 @@
  */
 
 
-import * as globalImportUrl from 'url';
+import * as globalImportUrl from './url-polyfill';
 import globalAxios, { AxiosPromise, AxiosInstance } from 'axios';
-import { Configuration } from '../configuration';
+import { Configuration } from './configuration';
 // Some imports not used depending on template conditions
 // @ts-ignore
-import { BASE_PATH, COLLECTION_FORMATS, RequestArgs, BaseAPI, RequiredError } from '../base';
+import { BASE_PATH, COLLECTION_FORMATS, RequestArgs, BaseAPI, RequiredError } from './base';
+import apiClient from '../services/api-client';
 // @ts-ignore
 import { ResultString } from '../models';
 // @ts-ignore
@@ -136,3 +137,5 @@ export class H5OSSApi extends BaseAPI {
     }
 
 }
+
+export const h5OssApi = H5OSSApiFactory(undefined, undefined, apiClient);

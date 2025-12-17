@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { format } from 'date-fns';
 import { PageHeader } from '@/components/PageHeader';
 import { RequestStatusBadge } from '@/components/RequestStatusBadge';
 import { RechargeDetailDialog } from '@/components/RechargeDetailDialog';
@@ -7,38 +8,31 @@ import { useData } from '@/contexts/DataContext';
 
 export default function RechargeApproval() {
   const { user } = useAuth();
-  const { getPendingRechargeRequests, fetchPendingRequests, teamMembers } = useData();
+  const { rechargeRequests, teamMembers, isLoading } = useData();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    fetchPendingRequests();
-  }, [fetchPendingRequests]);
-
-  const pendingRequests = getPendingRechargeRequests(user?.staffNo || '');
-  const sortedRequests = [...pendingRequests].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  const pendingRequests = rechargeRequests
+    .filter(r => r.status === 'pending')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
     <div className="min-h-screen bg-background">
       <PageHeader title="充值申请审核" />
 
       <main className="p-4 space-y-3">
-        {sortedRequests.length === 0 ? (
+        {isLoading ? (
+            <div className="text-center py-12">
+            <p className="text-muted-foreground">加载中...</p>
+          </div>
+        ) : pendingRequests.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">暂无待审核充值申请</p>
           </div>
         ) : (
-          sortedRequests.map((request) => {
+          pendingRequests.map((request) => {
             // Resolve Sales Name
-            let salesName = request.salesName;
-            if (!salesName || salesName === 'Unknown' || salesName === request.salesId) {
-                const staff = teamMembers.find(t => t.id === request.salesId || t.staffNo === request.salesStaffNo);
-                if (staff) salesName = staff.name;
-                else if (user && (user.id.toString() === request.salesId || user.staffNo === request.salesStaffNo)) {
-                    salesName = user.name;
-                }
-            }
+            const staff = teamMembers.find(t => t.id === request.salesId || t.staffNo === request.salesStaffNo);
+            const salesName = staff?.name || (request.salesName !== 'Unknown' ? request.salesName : '未知');
 
             return (
             <div
@@ -58,15 +52,18 @@ export default function RechargeApproval() {
                 <RequestStatusBadge status={request.status} />
               </div>
               <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>申请人: {salesName} ({request.salesStaffNo})</span>
+                <span>申请人: {salesName}</span>
               </div>
+              {/* DataContext stores gift amount in giftProduct string like "送100", let's parse or use giftProduct if amount is missing */}
+              {/* Actually DataContext RechargeRequest has giftProduct string, but we can try to parse it if we want amount. */}
+              {/* Wait, the raw API has giftAmount. DataContext map: giftProduct: r.giftAmount ? `送${r.giftAmount}` : '', */}
               {request.giftProduct && (
                 <p className="text-sm text-muted-foreground mt-1">
-                  赠送: {request.giftProduct}
+                   {request.giftProduct}
                 </p>
               )}
               <div className="text-xs text-muted-foreground mt-1">
-                {request.createdAt}
+                {request.createdAt ? format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm') : ''}
               </div>
             </div>
             );

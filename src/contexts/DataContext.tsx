@@ -210,9 +210,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   
   const [isLoading, setIsLoading] = useState(false);
 
-  // Initialize Stores and Card Types
+  // Initialize Data when user logs in
   useEffect(() => {
-    const init = async () => {
+    const initGlobalData = async () => {
       try {
         const storeRes = await getStoreList();
         if (storeRes.code === 200 && storeRes.data) {
@@ -231,12 +231,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         console.error('Initialization failed', err);
       }
     };
-    init();
-  }, []);
 
-  // Fetch initial data when user logs in
-  useEffect(() => {
     if (user) {
+      // Fetch global config data
+      initGlobalData();
+
       if (user.role === 'leader') {
         fetchPendingRequests();
         fetchTeamMembers();
@@ -346,7 +345,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                   roomId: r.id?.toString() || '',
                   date: date,
                   customerId: bookingResp.memberId?.toString() || '',
-                  customerName: bookingResp.memberId?.toString() || 'Unknown', // No name in response
+                  customerName: 'Unknown', // No name in response
                   price: r.price || 0,
                   status: status,
                   salesId: bookingResp.staffId?.toString() || '',
@@ -383,7 +382,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
                             // Preserve nice names if they exist and fresh doesn't have them (or has IDs)
                             salesName: (existing.salesName && existing.salesName !== 'Unknown' && existing.salesName !== existing.salesId) ? existing.salesName : fresh.salesName,
                             customerName: (existing.customerName && existing.customerName !== 'Unknown' && existing.customerName !== existing.customerId) ? existing.customerName : fresh.customerName,
-                            rejectReason: fresh.rejectReason || existing.rejectReason
+                            rejectReason: fresh.rejectReason || existing.rejectReason,
+                            createdAt: existing.createdAt || fresh.createdAt,
+                            reserveNo: fresh.reserveNo || existing.reserveNo
                         };
                         resultMap.set(existing.id, merged);
                         newBookingMap.delete(existing.id); // Mark as handled
@@ -427,7 +428,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
            roomId: b.roomId?.toString() || '',
            date: b.reserveDate || '',
            customerId: b.memberId?.toString() || '',
-           customerName: b.memberId?.toString() || 'Unknown',
+           customerName: b.memberName || b.memberId?.toString() || 'Unknown',
            price: 0, // Need to look up room price?
            status: 'pending' as BookingStatus,
            salesId: b.staffId?.toString() || '',
@@ -520,11 +521,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const fetchMyRequests = useCallback(async () => {
     setIsLoading(true);
     try {
+        // Common data for all roles
         await Promise.all([
-          fetchCustomers(),
           fetchTeamMembers(),
           fetchCardTypes()
         ]);
+
+        // "My" lists are only for sales
+        if (user?.role !== 'sales') {
+            setIsLoading(false);
+            return;
+        }
+
+        await fetchCustomers();
 
         // Fetch My Reservations
         const resRes = await getMyReservations(1, 100);

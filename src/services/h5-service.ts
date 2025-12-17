@@ -74,8 +74,8 @@ export const getMyMembers = async (page?: number, size?: number): Promise<PageRe
 };
 
 // 会员详情
-export const getMemberDetail = async (id: number): Promise<H5MemberResp> => {
-  const response = await apiClient.get<H5MemberResp>(`/api/h5/members/${id}`);
+export const getMemberDetail = async (id: number): Promise<ResultH5MemberResp> => {
+  const response = await apiClient.get<ResultH5MemberResp>(`/api/h5/members/${id}`);
   return response.data;
 };
 
@@ -132,6 +132,17 @@ export const getMyReservations = async (page?: number, size?: number, status?: s
   return response.data;
 };
 
+// 业务员预定列表（队长查看）
+export const getTeamMemberReservations = async (staffId: number, page?: number, size?: number, status?: string): Promise<PageResultReservationResp> => {
+  const params = new URLSearchParams();
+  if (page) params.append('page', page.toString());
+  if (size) params.append('size', size.toString());
+  if (status) params.append('status', status);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const response = await apiClient.get<PageResultReservationResp>(`/api/h5/team/staffs/${staffId}/reservations${query}`);
+  return response.data;
+};
+
 // ==================== 充值相关 ====================
 
 // 提交充值申请
@@ -179,6 +190,17 @@ export const getMyRecharges = async (page?: number, size?: number, status?: stri
   return response.data;
 };
 
+// 业务员充值申请列表（队长查看）
+export const getTeamMemberRecharges = async (staffId: number, page?: number, size?: number, status?: string): Promise<PageResultRechargeResp> => {
+  const params = new URLSearchParams();
+  if (page) params.append('page', page.toString());
+  if (size) params.append('size', size.toString());
+  if (status) params.append('status', status);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const response = await apiClient.get<PageResultRechargeResp>(`/api/h5/team/staffs/${staffId}/recharge-applies${query}`);
+  return response.data;
+};
+
 // ==================== 消费相关 ====================
 
 // 提交消费确认
@@ -223,6 +245,17 @@ export const getMyConsumes = async (page?: number, size?: number, status?: strin
   if (status) params.append('status', status);
   const query = params.toString() ? `?${params.toString()}` : '';
   const response = await apiClient.get<PageResultConsumeResp>(`/api/h5/consume-applies/my${query}`);
+  return response.data;
+};
+
+// 业务员消费确认列表（队长查看）
+export const getTeamMemberConsumes = async (staffId: number, page?: number, size?: number, status?: string): Promise<PageResultConsumeResp> => {
+  const params = new URLSearchParams();
+  if (page) params.append('page', page.toString());
+  if (size) params.append('size', size.toString());
+  if (status) params.append('status', status);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const response = await apiClient.get<PageResultConsumeResp>(`/api/h5/team/staffs/${staffId}/consume-applies${query}`);
   return response.data;
 };
 

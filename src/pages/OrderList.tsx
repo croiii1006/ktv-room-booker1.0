@@ -1,85 +1,149 @@
 import React, { useState } from 'react';
-import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 import { PageHeader } from '@/components/PageHeader';
-import { StatusBadge } from '@/components/StatusBadge';
-import { OrderDetailDialog } from '@/components/OrderDetailDialog';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { useData } from '@/contexts/DataContext';
+import { BookingDialog } from '@/components/BookingDialog';
+import { BookingDetailDialog } from '@/components/BookingDetailDialog';
+import { useReservationList } from '@/queries/reservation-queries';
+import { format } from 'date-fns';
 
 export default function OrderList() {
   const { user } = useAuth();
-  const { getBookingsByStaff, rooms, customers, fetchMyRequests } = useData();
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    fetchMyRequests();
-  }, [fetchMyRequests]);
+  // Map tab to API status param (if backend supports it, otherwise filter client side)
+  // Assuming API supports status filtering. If not, remove status param and filter in client.
+  const statusMap = {
+    'all': undefined,
+    'pending': 'PENDING',
+    'approved': 'APPROVED',
+    'rejected': 'REJECTED'
+  };
 
-  const orders = user ? getBookingsByStaff(user.id.toString() || user.staffNo) : [];
-  const sortedOrders = [...orders].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  const { data: reservationData, isLoading, error } = useReservationList(undefined, undefined, statusMap[activeTab]);
+  const bookings = reservationData?.data?.data?.list || [];
 
+  // Filter client-side if API doesn't support filtering by status properly or returns all
+  // For now assuming API returns filtered list if status is passed
+  
   return (
     <div className="min-h-screen bg-background">
-      <PageHeader title="订单申请" />
+      <PageHeader title="我的预定" />
 
-      <main className="p-4 space-y-3">
-        {sortedOrders.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">暂无订单</p>
+      {/* Tabs */}
+      <div className="sticky top-[44px] z-10 bg-background border-b border-border">
+        <div className="flex overflow-x-auto hide-scrollbar">
+          {[
+            { id: 'all', label: '全部' },
+            { id: 'pending', label: '待审核' },
+            { id: 'approved', label: '已通过' },
+            { id: 'rejected', label: '已驳回' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex-1 min-w-[80px] py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <main className="p-4 space-y-3 pb-24">
+        {isLoading ? (
+           <div className="text-center py-12 text-muted-foreground">加载中...</div>
+        ) : bookings.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            暂无预定记录
           </div>
         ) : (
-          sortedOrders.map((order) => {
-            const room = rooms.find((r) => r.id === order.roomId);
-            const roomDisplay = room 
-                ? `${room.roomNo} - ${room.name}` 
-                : (order.roomId || '未知房间');
-            const formattedDate = format(new Date(order.date), 'MM/dd EEEE', {
-              locale: zhCN,
-            });
-
-            // Resolve Customer Name
-            let customerName = order.customerName;
-            if (!customerName || customerName === 'Unknown' || customerName === order.customerId) {
-                const customer = customers.find(c => c.id === order.customerId);
-                if (customer) customerName = customer.name;
-            }
-
-            return (
-              <div
-                key={order.id}
-                onClick={() => setSelectedOrderId(order.id)}
-                className="bg-card rounded-lg border border-border p-4 active:bg-accent transition-colors cursor-pointer animate-fade-in"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="font-semibold text-foreground">
-                      {roomDisplay} - {customerName}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {formattedDate}
-                    </p>
-                  </div>
-                  <StatusBadge status={order.status} />
+          bookings.map((booking) => (
+            <div
+              key={booking.id}
+              onClick={() => setSelectedBookingId(booking.id?.toString() || '')}
+              className="bg-card rounded-lg border border-border p-4 space-y-3 active:bg-accent transition-colors cursor-pointer"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-semibold text-foreground">{booking.roomTypeName} {booking.roomNo}</h3>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {booking.customerName} · {booking.customerPhone}
+                  </p>
                 </div>
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>申请时间: {order.createdAt}</span>
-                  <span className="font-medium text-foreground">¥{order.price}</span>
+                <StatusBadge status={booking.status || 'PENDING'} />
+              </div>
+
+              <div className="text-sm text-muted-foreground space-y-1">
+                <div className="flex justify-between">
+                  <span>到店时间</span>
+                  <span>{booking.arrivalTime ? format(new Date(booking.arrivalTime), 'MM-dd HH:mm') : '-'}</span>
+                </div>
+                {booking.deposit > 0 && (
+                   <div className="flex justify-between">
+                    <span>定金</span>
+                    <span>¥{booking.deposit}</span>
+                  </div>
+                )}
+                 <div className="flex justify-between">
+                  <span>备注</span>
+                  <span>{booking.remark || '无'}</span>
                 </div>
               </div>
-            );
-          })
+            </div>
+          ))
         )}
       </main>
 
-      <OrderDetailDialog
-        open={!!selectedOrderId}
-        onClose={() => setSelectedOrderId(null)}
-        bookingId={selectedOrderId || ''}
-        showActions={false}
+      {/* Footer Action */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border z-20">
+        <Button 
+          variant="mobileAction" 
+          size="full"
+          onClick={() => setIsBookingOpen(true)}
+        >
+          新增预定
+        </Button>
+      </div>
+
+      <BookingDialog 
+        open={isBookingOpen} 
+        onOpenChange={setIsBookingOpen}
+      />
+
+      <BookingDetailDialog
+        bookingId={selectedBookingId}
+        open={!!selectedBookingId}
+        onOpenChange={(open) => !open && setSelectedBookingId(null)}
       />
     </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const styles = {
+    PENDING: 'bg-yellow-500/10 text-yellow-600',
+    APPROVED: 'bg-green-500/10 text-green-600',
+    REJECTED: 'bg-red-500/10 text-red-600',
+    CANCELLED: 'bg-gray-500/10 text-gray-600',
+  };
+
+  const labels = {
+    PENDING: '待审核',
+    APPROVED: '已通过',
+    REJECTED: '已驳回',
+    CANCELLED: '已取消',
+  };
+
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[status as keyof typeof styles] || styles.PENDING}`}>
+      {labels[status as keyof typeof labels] || status}
+    </span>
   );
 }

@@ -41,7 +41,7 @@ apiClient.interceptors.response.use(
        if (data.code === 401) {
           toast.error('登录已过期，请重新登录');
           localStorage.removeItem('token');
-          localStorage.removeItem('user');
+          localStorage.removeItem('ktv_user');
           window.location.href = '/login';
           return Promise.reject(new Error('Unauthorized'));
        }

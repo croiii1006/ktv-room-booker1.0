@@ -4,13 +4,19 @@ import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
-import { useData } from '@/contexts/DataContext';
 import { toast } from 'sonner';
+import { useCreateMember } from '@/queries/member-queries';
+import { useCardTypeList } from '@/queries/common-queries';
 
 export default function CustomerAdd() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { addCustomer, cardTypes } = useData();
+  
+  // Use Mutations and Queries
+  const { mutateAsync: addCustomer, isPending: isSubmitting } = useCreateMember();
+  const { data: cardTypesData } = useCardTypeList();
+  
+  const cardTypes = cardTypesData?.data || [];
 
   const [formData, setFormData] = useState({
     name: '',
@@ -45,15 +51,20 @@ export default function CustomerAdd() {
       return;
     }
 
-    await addCustomer({
-      name: formData.name,
-      phone: formData.phone,
-      idCard: formData.idCard,
-      cardTypeId: formData.cardTypeId,
-      remark: formData.remark,
-    });
-
-    navigate('/customers');
+    try {
+      await addCustomer({
+        name: formData.name,
+        phone: formData.phone,
+        idCard: formData.idCard,
+        cardTypeId: formData.cardTypeId,
+        remark: formData.remark,
+      });
+      toast.success('客户添加成功');
+      navigate('/customers');
+    } catch (error: any) {
+        // Error handling is mostly done in interceptors but we can catch here too
+        console.error(error);
+    }
   };
 
   return (
@@ -139,11 +150,12 @@ export default function CustomerAdd() {
             variant="mobileSecondary"
             size="full"
             onClick={() => navigate(-1)}
+            disabled={isSubmitting}
           >
             取消
           </Button>
-          <Button type="submit" variant="mobileAction" size="full">
-            确认
+          <Button type="submit" variant="mobileAction" size="full" disabled={isSubmitting}>
+            {isSubmitting ? '提交中...' : '确认'}
           </Button>
         </div>
       </form>

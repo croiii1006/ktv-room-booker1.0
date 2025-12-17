@@ -17,14 +17,14 @@ import { getReservationDetail, getStaffDetail } from "@/services/h5-service";
 
 interface ConsumptionDetailDialogProps {
   open: boolean;
-  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
   requestId: string;
   showActions: boolean;
 }
 
 export function ConsumptionDetailDialog({
   open,
-  onClose,
+  onOpenChange,
   requestId,
   showActions,
 }: ConsumptionDetailDialogProps) {
@@ -36,6 +36,12 @@ export function ConsumptionDetailDialog({
     teamMembers,
     user
   } = useData();
+
+  const onClose = () => {
+    if (typeof onOpenChange === 'function') {
+      onOpenChange(false);
+    }
+  };
 
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [reason, setReason] = useState("");
@@ -199,13 +205,13 @@ export function ConsumptionDetailDialog({
             <div className="flex justify-between">
               <span className="text-muted-foreground">预定业务员</span>
               <span className="font-medium">
-                  {bookingSalesName} {bookingSalesStaffNo ? `(${bookingSalesStaffNo})` : ''}
+                  {bookingSalesName}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">服务业务员</span>
               <span className="font-medium">
-                {serviceSalesName} ({request.serviceSalesStaffNo})
+                {serviceSalesName}
               </span>
             </div>
             <div className="flex justify-between">
@@ -286,7 +292,7 @@ export function ConsumptionDetailDialog({
             </Button>
           </div>
         ) : (
-          <Button variant="mobileSecondary" size="full" onClick={onClose}>
+          <Button variant="mobileSecondary" size="full" onClick={() => onOpenChange(false)}>
             关闭
           </Button>
         )}

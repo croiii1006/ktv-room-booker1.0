@@ -5,42 +5,37 @@ import { PageHeader } from '@/components/PageHeader';
 import { RequestStatusBadge } from '@/components/RequestStatusBadge';
 import { ConsumptionDetailDialog } from '@/components/ConsumptionDetailDialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { useData } from '@/contexts/DataContext';
+import { useConsumeList } from '@/queries/consume-queries';
 
 export default function ConsumptionRequestList() {
   const { user } = useAuth();
-  const { getConsumptionRequestsBySales, fetchMyRequests, rooms } = useData();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    fetchMyRequests();
-  }, [fetchMyRequests]);
-
-  const requests = getConsumptionRequestsBySales(user?.id.toString() || user?.staffNo || '');
-  const sortedRequests = [...requests].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  const { data: consumeData, isLoading } = useConsumeList();
+  const requests = consumeData?.data?.data?.list || [];
 
   return (
     <div className="min-h-screen bg-background">
       <PageHeader title="确认消费申请" />
 
       <main className="p-4 space-y-3">
-        {sortedRequests.length === 0 ? (
+        {isLoading ? (
+             <div className="text-center py-12">
+             <p className="text-muted-foreground">加载中...</p>
+           </div>
+        ) : requests.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">暂无消费确认申请记录</p>
           </div>
         ) : (
-          sortedRequests.map((request) => {
-            const room = rooms.find(r => r.id === request.roomId);
-            const roomDisplay = room 
-                ? `${room.roomNo} - ${room.name}` 
-                : (request.roomName || request.roomId || '未知房间');
-            
+          requests.map((request) => {
+            const roomDisplay = request.roomNo ? `${request.roomNo} - ${request.roomTypeName}` : (request.roomTypeName || '未知房间');
+            const dateDisplay = request.bookingDate ? format(new Date(request.bookingDate), 'MM/dd EEEE', { locale: zhCN }) : '-';
+
             return (
             <div
               key={request.id}
-              onClick={() => setSelectedId(request.id)}
+              onClick={() => setSelectedId(request.id?.toString() || '')}
               className="bg-card rounded-lg border border-border p-4 active:bg-accent transition-colors cursor-pointer animate-fade-in"
             >
               <div className="flex items-start justify-between mb-2">
@@ -49,16 +44,16 @@ export default function ConsumptionRequestList() {
                     {roomDisplay} {request.customerName}
                   </h3>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    {format(new Date(request.date), 'MM/dd EEEE', { locale: zhCN })}
+                    {dateDisplay}
                   </p>
                 </div>
-                <RequestStatusBadge status={request.status} />
+                <RequestStatusBadge status={request.status || 'PENDING'} />
               </div>
               <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>服务业务员: {request.serviceSalesName}</span>
+                <span>服务业务员: {request.serviceStaffName || '未知'}</span>
               </div>
               <div className="text-xs text-muted-foreground mt-1">
-                {request.createdAt}
+                {request.createdAt ? format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm') : ''}
               </div>
             </div>
           )})

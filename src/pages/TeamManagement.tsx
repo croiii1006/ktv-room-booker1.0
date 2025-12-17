@@ -11,15 +11,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { useData } from '@/contexts/DataContext';
 import { toast } from 'sonner';
+import { useTeamList, useCreateTeamMember } from '@/queries/team-queries';
 
 export default function TeamManagement() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { getTeamMembers, addTeamMember, removeTeamMember } = useData();
+  
+  const { data: teamData, isLoading, isError, error } = useTeamList();
+  const { mutateAsync: addTeamMember, isPending: isSubmitting } = useCreateTeamMember();
+
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     username: '', // staffNo
@@ -28,7 +30,7 @@ export default function TeamManagement() {
     phone: '',
   });
 
-  const myTeamMembers = getTeamMembers(user?.staffNo || '');
+  const myTeamMembers = teamData?.data?.data?.list || [];
 
   const handleAddMember = async () => {
     if (!formData.username.trim() || !formData.name.trim() || !formData.password.trim() || !formData.phone.trim()) {
@@ -36,25 +38,28 @@ export default function TeamManagement() {
       return;
     }
 
-    setIsSubmitting(true);
-    const success = await addTeamMember({
-      username: formData.username,
-      name: formData.name,
-      password: formData.password,
-      phone: formData.phone,
-    });
-    setIsSubmitting(false);
-
-    if (success) {
+    try {
+      await addTeamMember({
+        staffNo: formData.username,
+        name: formData.name,
+        password: formData.password,
+        phone: formData.phone,
+        role: 'sales', // Default role for team members added by leader
+      });
+      toast.success('业务员添加成功');
       setShowAddDialog(false);
       setFormData({ username: '', name: '', password: '', phone: '' });
+    } catch (error) {
+       console.error(error);
+       // Error handled by global interceptor typically
     }
   };
 
   const handleRemoveMember = (id: string, name: string) => {
-    if (confirm(`确定要删除业务员 ${name} 吗？`)) {
-      removeTeamMember(id);
-    }
+    // Implement remove logic if API supports it. Currently only create is supported in hooks.
+    // If remove is needed, need to add to team-queries.ts
+    // For now showing toast
+    toast.error('暂不支持删除功能');
   };
 
   return (
@@ -75,7 +80,22 @@ export default function TeamManagement() {
 
         {/* Team Members List */}
         <div className="space-y-3">
-          {myTeamMembers.length === 0 ? (
+          {isLoading ? (
+             <div className="text-center py-12">
+             <p className="text-muted-foreground">加载中...</p>
+           </div>
+          ) : isError ? (
+            <div className="text-center py-12">
+              <p className="text-destructive">加载失败: {error?.message || '未知错误'}</p>
+              <Button 
+                variant="ghost" 
+                className="mt-2"
+                onClick={() => window.location.reload()}
+              >
+                重试
+              </Button>
+            </div>
+          ) : myTeamMembers.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground">暂无团队成员</p>
             </div>
@@ -87,21 +107,22 @@ export default function TeamManagement() {
               >
                 <div
                   className="flex-1 cursor-pointer"
-                  onClick={() => navigate(`/team/${member.staffNo || member.id}`)}
+                  onClick={() => navigate(`/team/${member.id}`)}
                 >
                   <h3 className="font-semibold text-foreground">{member.name}</h3>
-                  <p className="text-sm text-muted-foreground">工号: {member.staffNo || 'N/A'}</p>
                   <p className="text-sm text-muted-foreground">手机: {member.phone || 'N/A'}</p>
                 </div>
+                {/* 
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleRemoveMember(member.id, member.name);
+                    handleRemoveMember(member.id?.toString() || '', member.name || '');
                   }}
                   className="p-2 rounded-lg hover:bg-destructive/10 transition-colors"
                 >
                   <Trash2 className="w-5 h-5 text-destructive" />
                 </button>
+                */}
               </div>
             ))
           )}
