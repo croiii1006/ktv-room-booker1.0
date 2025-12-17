@@ -491,11 +491,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
             roomId: c.roomId?.toString() || '',
             roomName: '', // Need lookup
             date: c.createdAt || '', 
-            bookingSalesId: c.applyStaffId?.toString() || '',
+            bookingSalesId: '', // Resolved in UI using reservationId
             bookingSalesName: '', // Resolved in UI
-            serviceSalesId: c.receptionStaffId?.toString() || '',
+            serviceSalesId: c.receptionStaffId?.toString() || c.applyStaffId?.toString() || '',
             serviceSalesName: 'Unknown',
-            serviceSalesStaffNo: c.receptionStaffId?.toString() || '',
+            serviceSalesStaffNo: c.receptionStaffId?.toString() || c.applyStaffId?.toString() || '',
             status: 'pending' as RequestStatus,
             leaderId: '',
             createdAt: c.createdAt || '',

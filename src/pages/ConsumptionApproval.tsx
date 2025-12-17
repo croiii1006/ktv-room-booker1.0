@@ -92,9 +92,11 @@ export default function ConsumptionApproval() {
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>服务业务员: {serviceSalesName}</span>
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                预定业务员: {bookingSalesName}
-              </div>
+              {bookingSalesName && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  预定业务员: {bookingSalesName}
+                </div>
+              )}
               <div className="text-xs text-muted-foreground mt-1">
                 {request.createdAt}
               </div>

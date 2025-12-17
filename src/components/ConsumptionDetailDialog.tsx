@@ -13,6 +13,8 @@ import { RequestStatusBadge } from "@/components/RequestStatusBadge";
 import { useData } from "@/contexts/DataContext";
 import { toast } from "sonner";
 
+import { getReservationDetail, getStaffDetail } from "@/services/h5-service";
+
 interface ConsumptionDetailDialogProps {
   open: boolean;
   onClose: () => void;
@@ -37,6 +39,8 @@ export function ConsumptionDetailDialog({
 
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [reason, setReason] = useState("");
+  const [realBookingSalesName, setRealBookingSalesName] = useState("");
+  const [realBookingSalesStaffNo, setRealBookingSalesStaffNo] = useState("");
 
   // 先找到请求
   const request = consumptionRequests.find((r) => r.id === requestId);
@@ -56,14 +60,45 @@ export function ConsumptionDetailDialog({
   }
 
   // Resolve Booking Sales Name
-  let bookingSalesName = request?.bookingSalesName;
-  if (request && (!bookingSalesName && request.bookingSalesId)) {
+  let bookingSalesName = realBookingSalesName || request?.bookingSalesName;
+  const bookingSalesStaffNo = realBookingSalesStaffNo || request?.bookingSalesId || "";
+
+  if (request && !bookingSalesName && request.bookingSalesId) {
       const staff = teamMembers.find(t => t.id === request.bookingSalesId || t.staffNo === request.bookingSalesId);
       if (staff) bookingSalesName = staff.name;
       else if (user && (user.id.toString() === request.bookingSalesId || user.staffNo === request.bookingSalesId)) {
           bookingSalesName = user.name;
       }
   }
+
+  useEffect(() => {
+    if (request?.bookingId) {
+      getReservationDetail(parseInt(request.bookingId))
+        .then(async (res) => {
+          if (res.code === 200 && res.data) {
+            const staffId = res.data.staffId;
+            if (staffId) {
+              // Get Staff Detail to get name
+              try {
+                const staffRes = await getStaffDetail(staffId);
+                if (staffRes.code === 200 && staffRes.data) {
+                  setRealBookingSalesName(staffRes.data.name || "");
+                  setRealBookingSalesStaffNo(staffRes.data.phone || staffId.toString());
+                }
+              } catch (err) {
+                 console.error("Failed to fetch staff detail", err);
+              }
+            }
+          }
+        })
+        .catch(err => {
+          console.error("Failed to fetch reservation detail", err);
+        });
+    } else {
+        setRealBookingSalesName("");
+        setRealBookingSalesStaffNo("");
+    }
+  }, [request?.bookingId]);
 
   const isPending = request?.status === "pending";
   const isRejected = request?.status === "rejected";
@@ -163,7 +198,9 @@ export function ConsumptionDetailDialog({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">预定业务员</span>
-              <span className="font-medium">{bookingSalesName}</span>
+              <span className="font-medium">
+                  {bookingSalesName} {bookingSalesStaffNo ? `(${bookingSalesStaffNo})` : ''}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">服务业务员</span>
