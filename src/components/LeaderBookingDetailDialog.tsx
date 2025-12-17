@@ -248,7 +248,7 @@ export function LeaderBookingDetailDialog({
 
         {!showRejectForm && !showCancelForm && (
           <div className="flex flex-col gap-3">
-            {booking.status === 'pending' && (
+            {booking.status === 'pending' ? (
               <div className="flex gap-3">
                 <Button variant="danger" size="full" onClick={() => setShowRejectForm(true)}>
                   驳回
@@ -257,15 +257,22 @@ export function LeaderBookingDetailDialog({
                   通过
                 </Button>
               </div>
-            )}
-            {booking.status === 'finished' && (
+            ) : booking.status === 'finished' ? (
               <Button variant="danger" size="full" onClick={() => setShowCancelForm(true)}>
                 提前取消
               </Button>
+            ) : (
+                <Button variant="mobileSecondary" size="full" onClick={onClose}>
+                    关闭
+                </Button>
             )}
-            <Button variant="mobileSecondary" size="full" onClick={onClose}>
-              关闭
-            </Button>
+            
+            {/* If we are pending, we might want a close button too? 
+                ConsumptionDialog only shows actions OR close.
+                If actions are shown (pending), close is hidden in ConsumptionDialog.
+                But LeaderBookingDetailDialog used to show Close below actions?
+                Let's match ConsumptionDialog: actions replace Close.
+            */}
           </div>
         )}
       </DialogContent>

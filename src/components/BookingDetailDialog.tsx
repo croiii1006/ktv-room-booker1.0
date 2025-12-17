@@ -28,10 +28,13 @@ export function BookingDetailDialog({
   open,
   onOpenChange,
   bookingId,
+  isReviewMode = false,
 }: BookingDetailDialogProps) {
   const { user } = useAuth();
-  const { bookings, rooms, addConsumptionRequest, getLeaderIdForSales } = useData();
+  const { bookings, rooms, addConsumptionRequest, getLeaderIdForSales, updateBookingStatus } = useData();
   const [showConsumptionForm, setShowConsumptionForm] = useState(false);
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -123,6 +126,41 @@ export function BookingDetailDialog({
   const formattedDate = format(new Date(booking.date), 'yyyy年MM月dd日 EEEE', {
     locale: zhCN,
   });
+
+  const handleApprove = async () => {
+      setIsSubmitting(true);
+      // Assuming updateBookingStatus handles the API call
+      // In DataContext, updateBookingStatus calls api.updateStatus
+      // We should check if updateBookingStatus returns success/promise
+      try {
+          await updateBookingStatus(bookingId!, 'approved');
+          toast.success("订单已通过");
+          onOpenChange(false);
+      } catch (error) {
+          toast.error("操作失败");
+      } finally {
+          setIsSubmitting(false);
+      }
+  };
+
+  const handleReject = async () => {
+    if (!rejectReason.trim()) {
+      toast.error("请填写驳回理由");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+        await updateBookingStatus(bookingId!, 'rejected', rejectReason);
+        toast.success("订单已驳回");
+        setShowRejectForm(false);
+        setRejectReason("");
+        onOpenChange(false);
+    } catch (error) {
+        toast.error("操作失败");
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
 
   const handleConsumptionRequest = async () => {
     const leaderId = user?.leaderId ? user.leaderId.toString() : getLeaderIdForSales(user?.staffNo || '');
@@ -229,6 +267,27 @@ export function BookingDetailDialog({
             </div>
           </div>
 
+          {/* Reject Form */}
+          {showRejectForm && (
+            <div className="space-y-3 p-4 bg-accent/50 rounded-lg">
+              <p className="text-sm font-medium">请填写驳回理由</p>
+              <Textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="请输入驳回理由..."
+                className="min-h-[80px]"
+              />
+              <div className="flex gap-3">
+                <Button variant="mobileSecondary" size="full" onClick={() => setShowRejectForm(false)}>
+                  取消
+                </Button>
+                <Button variant="danger" size="full" onClick={handleReject} disabled={isSubmitting}>
+                  {isSubmitting ? '提交中...' : '确认驳回'}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Consumption Request Form */}
           {showConsumptionForm && (
             <div className="space-y-3 p-4 bg-accent/50 rounded-lg">
@@ -274,16 +333,33 @@ export function BookingDetailDialog({
           )}
         </div>
 
-        {!showConsumptionForm && (
+        {!showConsumptionForm && !showRejectForm && (
           <div className="flex flex-col gap-3">
-            {booking.status === 'booked' && (
-              <Button variant="success" size="full" onClick={() => setShowConsumptionForm(true)}>
-                已到店消费申请
-              </Button>
+            {isReviewMode && booking.status === 'pending' ? (
+              <div className="flex gap-3">
+                <Button 
+                  variant="danger" 
+                  size="full" 
+                  onClick={() => setShowRejectForm(true)}
+                >
+                  驳回
+                </Button>
+                <Button variant="success" size="full" onClick={handleApprove} disabled={isSubmitting}>
+                  通过
+                </Button>
+              </div>
+            ) : (
+                <div className="flex flex-col gap-3">
+                    {booking.status === 'booked' && (
+                    <Button variant="success" size="full" onClick={() => setShowConsumptionForm(true)}>
+                        已到店消费申请
+                    </Button>
+                    )}
+                    <Button variant="mobileSecondary" size="full" onClick={() => onOpenChange(false)}>
+                        关闭
+                    </Button>
+                </div>
             )}
-            <Button variant="mobileSecondary" size="full" onClick={() => onOpenChange(false)}>
-              关闭
-            </Button>
           </div>
         )}
       </DialogContent>
