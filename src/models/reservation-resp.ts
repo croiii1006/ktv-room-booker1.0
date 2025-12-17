@@ -50,11 +50,29 @@ export interface ReservationResp {
      */
     memberId?: number;
     /**
+     * 客户姓名
+     * @type {string}
+     * @memberof ReservationResp
+     */
+    memberName?: string;
+    /**
      * 申请人(业务员)ID
      * @type {number}
      * @memberof ReservationResp
      */
     staffId?: number;
+    /**
+     * 申请人(业务员)姓名
+     * @type {string}
+     * @memberof ReservationResp
+     */
+    applyStaffName?: string;
+    /**
+     * 服务人姓名
+     * @type {string}
+     * @memberof ReservationResp
+     */
+    serviceStaffName?: string;
     /**
      * 预定日期
      * @type {string}
