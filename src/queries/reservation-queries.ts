@@ -68,6 +68,7 @@ export const useApproveReservation = () => {
              queryClient.invalidateQueries({ queryKey: reservationKeys.detail(id) });
         });
       }
+      queryClient.invalidateQueries({ queryKey: ['schedule'] });
     },
   });
 };
@@ -85,6 +86,7 @@ export const useRejectReservation = () => {
              queryClient.invalidateQueries({ queryKey: reservationKeys.detail(id) });
         });
       }
+      queryClient.invalidateQueries({ queryKey: ['schedule'] });
     },
   });
 };
@@ -99,6 +101,7 @@ export const useCancelReservation = () => {
        if (variables.id) {
              queryClient.invalidateQueries({ queryKey: reservationKeys.detail(variables.id) });
       }
+      queryClient.invalidateQueries({ queryKey: ['schedule'] });
     },
   });
 };

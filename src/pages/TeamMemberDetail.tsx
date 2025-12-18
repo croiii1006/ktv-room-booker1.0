@@ -8,20 +8,13 @@ import { RequestStatusBadge } from "@/components/RequestStatusBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { BookingDetailDialog } from "@/components/BookingDetailDialog";
+import { ConsumptionDetailDialog } from "@/components/ConsumptionDetailDialog";
+import { RechargeDetailDialog } from "@/components/RechargeDetailDialog";
 import { useTeamMemberDetail, useTeamMemberReservations, useTeamMemberRecharges, useTeamMemberConsumes, useTeamList } from "@/queries/team-queries";
 import { useMemberList } from "@/queries/member-queries";
 import { useRoomSchedule } from "@/queries/common-queries";
-import { useReservationDetail } from "@/queries/reservation-queries";
-import { useConsumeDetail } from "@/queries/consume-queries";
 import { MemberNameDisplay } from "@/components/MemberNameDisplay";
-import { StaffNameDisplay } from "@/components/StaffNameDisplay";
 
 type DetailType = "customer" | "recharge" | "service" | "booking";
 
@@ -85,14 +78,6 @@ export default function TeamMemberDetail() {
 
   const [selected, setSelected] = useState<SelectedItem | null>(null);
 
-  // Fetch booking detail if a booking is selected
-  const selectedBookingId = selected?.type === 'booking' ? selected.data.id : 0;
-  const { data: bookingDetailData, isLoading: isLoadingBookingDetail } = useReservationDetail(selectedBookingId);
-
-  // Fetch consume detail if a service is selected
-  const selectedConsumeId = selected?.type === 'service' ? selected.data.id : 0;
-  const { data: consumeDetailData, isLoading: isLoadingConsumeDetail } = useConsumeDetail(selectedConsumeId);
-  
   if (isLoadingMember) {
      return (
        <div className="min-h-screen bg-background flex items-center justify-center">
@@ -111,265 +96,6 @@ export default function TeamMemberDetail() {
       </div>
     );
   }
-
-  // 根据选中的 item 渲染弹窗内容
-  const renderDetailContent = () => {
-    if (!selected) return null;
-    const item = selected.data;
-
-    if (selected.type === "customer") {
-      return (
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">客户姓名</span>
-            <span className="font-medium"><MemberNameDisplay id={item.id} initialName={item.name} /></span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">客户编号</span>
-            <span className="font-medium">{item.id}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">手机号</span>
-            <span className="font-medium">{item.phone || "未填写"}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">证件号</span>
-            <span className="font-medium text-xs">
-              {item.idCard || "未填写"}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">卡类型</span>
-            <span className="font-medium">{item.cardTypeName || item.cardType}卡</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">开卡日期</span>
-            <span className="font-medium">{item.createdAt ? format(new Date(item.createdAt), 'yyyy-MM-dd') : '-'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">余额</span>
-            <span className="font-medium text-primary">¥{item.balance}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">赠送金额</span>
-            <span className="font-medium">¥{item.giftBalance || item.giftAmount || 0}</span>
-          </div>
-        </div>
-      );
-    }
-
-    if (selected.type === "recharge") {
-      return (
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">客户</span>
-            <span className="font-medium"><MemberNameDisplay id={item.memberId || item.customerId} initialName={resolveNameFromList(item)} /></span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">充值金额</span>
-            <span className="font-medium text-primary">¥{item.amount}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">赠送产品</span>
-            <span className="font-medium">{item.giftAmount ? `¥${item.giftAmount}` : "无"}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">状态</span>
-            <RequestStatusBadge status={item.status || 'PENDING'} />
-          </div>
-          {item.rejectReason && (
-            <div>
-              <p className="text-muted-foreground text-xs mb-1">驳回理由</p>
-              <p className="text-xs text-destructive">{item.rejectReason}</p>
-            </div>
-          )}
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">申请时间</span>
-            <span className="font-medium text-xs">{item.createdAt ? format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm') : '-'}</span>
-          </div>
-        </div>
-      );
-    }
-
-    if (selected.type === "booking") {
-      // 如果正在加载详情，显示加载中
-      if (isLoadingBookingDetail) {
-         return (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
-         );
-      }
-      
-      // 优先使用详情接口返回的数据，否则使用列表数据
-      // 注意：bookingDetailData.data 是 ResultReservationResp，bookingDetailData.data.data 才是 ReservationResp
-      const detailItem = bookingDetailData?.data?.data || item;
-      
-      // 预定记录
-      // Use reserveDate instead of arrivalTime as per API response
-      const dateStr = detailItem.reserveDate || detailItem.arrivalTime;
-      const formattedDate = dateStr ? format(new Date(dateStr), "yyyy年MM月dd日 EEEE", {
-        locale: zhCN,
-      }) : '-';
-      
-      return (
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">预定号</span>
-            <span className="font-medium text-xs">{detailItem.reserveNo}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">房间号</span>
-            <span className="font-medium">
-               {getRoomInfo(detailItem.roomId)}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">预定日期</span>
-            <span className="font-medium">{formattedDate}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">预计人数</span>
-            <span className="font-medium">{detailItem.guestCount || 1}人</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">客户</span>
-            <span className="font-medium"><MemberNameDisplay id={detailItem.memberId || detailItem.customerId} initialName={detailItem.memberName || resolveNameFromList(detailItem)} /></span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">预定业务员</span>
-            <span className="font-medium">
-              <StaffNameDisplay 
-                id={detailItem.applyStaffId || detailItem.salesId} 
-                initialName={detailItem.applyStaffName || detailItem.salesName} 
-              />
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">订单状态</span>
-            <StatusBadge status={detailItem.status || 'PENDING'} />
-          </div>
-          {detailItem.remark && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">备注</span>
-              <span className="font-medium text-xs max-w-[200px] truncate">{detailItem.remark}</span>
-            </div>
-          )}
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">创建时间</span>
-            <span className="font-medium text-xs">{detailItem.createdAt ? format(new Date(detailItem.createdAt), 'yyyy-MM-dd HH:mm') : '-'}</span>
-          </div>
-          {detailItem.rejectReason && (
-            <div>
-              <p className="text-muted-foreground text-xs mb-1">驳回理由</p>
-              <p className="text-xs text-destructive">{detailItem.rejectReason}</p>
-            </div>
-          )}
-        </div>
-      );
-    }
-    if (selected.type === "service") {
-      // 如果正在加载详情，显示加载中
-      if (isLoadingConsumeDetail) {
-         return (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
-         );
-      }
-      
-      // 优先使用详情接口返回的数据，否则使用列表数据
-      // 注意：consumeDetailData.data 是 ResultConsumeResp，consumeDetailData.data.data 才是 ConsumeResp
-      const detailItem = consumeDetailData?.data?.data || item;
-      
-      // 消费确认记录
-      // 消费确认可能没有 bookingDate，但有 createdAt 或其他时间
-      // 从列表数据看，并没有 bookingDate，可能需要用 createdAt 或者 reviewedAt
-      // 详情接口也没有 bookingDate。但是有 updatedAt。
-      // 列表数据里有 createdAt: "2025-12-16 15:26:14"
-      // 详情接口里有 createdAt: "2025-12-16 15:26:14"
-      // 之前的代码用了 bookingDate，可能是旧的逻辑或者字段理解错误。
-      // 假设用 createdAt 作为日期显示，或者如果有预定关联，可能是预定日期。
-      // 这里先用 createdAt 格式化
-      
-      const formattedDate = detailItem.createdAt ? format(new Date(detailItem.createdAt), "yyyy年MM月dd日 EEEE", {
-        locale: zhCN,
-      }) : '-';
-      
-      return (
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">消费单号</span>
-            <span className="font-medium text-xs">{detailItem.consumeNo}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">房间号</span>
-            <span className="font-medium">
-              {getRoomInfo(detailItem.roomId)}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">日期</span>
-            <span className="font-medium">{formattedDate}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">客户</span>
-            <span className="font-medium"><MemberNameDisplay id={detailItem.memberId || detailItem.customerId} initialName={detailItem.memberName || resolveNameFromList(detailItem)} /></span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">服务业务员</span>
-            <span className="font-medium">
-              <StaffNameDisplay 
-                id={detailItem.applyStaffId || detailItem.serviceStaffId} 
-                initialName={detailItem.applyStaffName || detailItem.serviceStaffName} 
-              />
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">消费金额</span>
-            <span className="font-medium text-primary">¥{detailItem.consumeAmount}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">本金扣除</span>
-            <span className="font-medium">¥{detailItem.useBalance}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">赠送金扣除</span>
-            <span className="font-medium">¥{detailItem.useGiftAmount}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">状态</span>
-            <RequestStatusBadge status={detailItem.status || 'PENDING'} />
-          </div>
-          {detailItem.remark && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">备注</span>
-              <span className="font-medium text-xs max-w-[200px] truncate">{detailItem.remark}</span>
-            </div>
-          )}
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">申请时间</span>
-            <span className="font-medium text-xs">{detailItem.createdAt ? format(new Date(detailItem.createdAt), 'yyyy-MM-dd HH:mm') : '-'}</span>
-          </div>
-          {detailItem.rejectReason && (
-            <div>
-              <p className="text-muted-foreground text-xs mb-1">驳回理由</p>
-              <p className="text-xs text-destructive">{detailItem.rejectReason}</p>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    return null;
-  };
-
-  const detailTitleMap: Record<DetailType, string> = {
-    customer: "客户详情",
-    recharge: "充值记录详情",
-    service: "服务记录详情",
-    booking: "预定记录详情",
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -568,31 +294,27 @@ export default function TeamMemberDetail() {
         </Tabs>
       </main>
 
-      {/* 统一详情弹窗 */}
-      {selected && (
-        <Dialog
-          open={!!selected}
-          onOpenChange={(open) => {
-            if (!open) setSelected(null);
-          }}
-        >
-          <DialogContent className="max-w-sm mx-4 rounded-xl">
-            <DialogHeader>
-              <DialogTitle>{detailTitleMap[selected.type]}</DialogTitle>
-            </DialogHeader>
+      {/* Detail Dialogs */}
+      <RechargeDetailDialog
+        open={selected?.type === 'recharge'}
+        onClose={() => setSelected(null)}
+        requestId={selected?.type === 'recharge' ? selected.data.id?.toString() : ''}
+        showActions={true}
+      />
 
-            {renderDetailContent()}
+      <BookingDetailDialog
+        open={selected?.type === 'booking'}
+        onOpenChange={(open) => !open && setSelected(null)}
+        bookingId={selected?.type === 'booking' ? selected.data.id?.toString() : null}
+        isReviewMode={true}
+      />
 
-            <Button
-              className="mt-4 w-full"
-              variant="mobileSecondary"
-              onClick={() => setSelected(null)}
-            >
-              关闭
-            </Button>
-          </DialogContent>
-        </Dialog>
-      )}
+      <ConsumptionDetailDialog
+        open={selected?.type === 'service'}
+        onOpenChange={(open) => !open && setSelected(null)}
+        requestId={selected?.type === 'service' ? selected.data.id?.toString() : ''}
+        showActions={true}
+      />
     </div>
   );
 }

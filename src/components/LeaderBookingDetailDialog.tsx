@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -35,19 +36,17 @@ export function LeaderBookingDetailDialog({
 }: LeaderBookingDetailDialogProps) {
   const { user } = useAuth();
   const [showRejectForm, setShowRejectForm] = useState(false);
-  const [showCancelForm, setShowCancelForm] = useState(false);
   const [reason, setReason] = useState('');
 
   // Determine if it's a real booking ID
   const isFreeSlot = bookingId.startsWith('free_');
   const realBookingId = isFreeSlot ? 0 : parseInt(bookingId);
 
-  const { data: res } = useReservationDetail(realBookingId);
+  const { data: res, isLoading } = useReservationDetail(realBookingId);
   const booking = res?.data?.data;
 
   const approveMutation = useApproveReservation();
   const rejectMutation = useRejectReservation();
-  const cancelMutation = useCancelReservation();
 
   // Handle free cell view
   if (isFreeSlot) {
@@ -59,7 +58,7 @@ export function LeaderBookingDetailDialog({
     
     return (
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-sm mx-4 rounded-xl">
+        <DialogContent className="max-w-sm mx-4 rounded-xl" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>房间详情</DialogTitle>
           </DialogHeader>
@@ -101,6 +100,17 @@ export function LeaderBookingDetailDialog({
     );
   }
 
+  if (isLoading) {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-sm mx-4 rounded-xl flex justify-center py-12" aria-describedby={undefined}>
+            <DialogTitle className="sr-only">加载中</DialogTitle>
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   if (!booking) return null;
 
   const formattedDate = booking.reserveDate ? format(new Date(booking.reserveDate), 'yyyy年MM月dd日 EEEE', {
@@ -133,25 +143,9 @@ export function LeaderBookingDetailDialog({
     }
   };
 
-  const handleCancel = async () => {
-    if (!reason.trim()) {
-      toast.error('请填写取消原因');
-      return;
-    }
-    try {
-        await cancelMutation.mutateAsync({ id: realBookingId, staffId: user?.id || 0, reason });
-        toast.success('订单已取消');
-        setShowCancelForm(false);
-        setReason('');
-        onClose();
-    } catch (e) {
-        toast.error('操作失败');
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm mx-4 rounded-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-sm mx-4 rounded-xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>订单详情</DialogTitle>
         </DialogHeader>
@@ -242,30 +236,9 @@ export function LeaderBookingDetailDialog({
               </div>
             </div>
           )}
-
-          {/* Cancel Form */}
-          {showCancelForm && (
-            <div className="space-y-3 p-4 bg-accent/50 rounded-lg">
-              <p className="text-sm font-medium">请填写提前取消原因</p>
-              <Textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="请输入取消原因..."
-                className="min-h-[80px]"
-              />
-              <div className="flex gap-3">
-                <Button variant="mobileSecondary" size="full" onClick={() => setShowCancelForm(false)}>
-                  返回
-                </Button>
-                <Button variant="danger" size="full" onClick={handleCancel} disabled={cancelMutation.isPending}>
-                  {cancelMutation.isPending ? '提交中...' : '确认取消'}
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
 
-        {!showRejectForm && !showCancelForm && (
+        {!showRejectForm && (
           <div className="flex flex-col gap-3">
             {booking.status === 'PENDING' ? (
               <div className="flex gap-3">
@@ -276,10 +249,6 @@ export function LeaderBookingDetailDialog({
                   {approveMutation.isPending ? '提交中...' : '通过'}
                 </Button>
               </div>
-            ) : booking.status === 'FINISHED' ? (
-              <Button variant="danger" size="full" onClick={() => setShowCancelForm(true)}>
-                提前取消
-              </Button>
             ) : (
                 <Button variant="mobileSecondary" size="full" onClick={onClose}>
                     关闭

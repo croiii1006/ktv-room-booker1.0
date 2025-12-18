@@ -41,9 +41,7 @@ export function BookingDetailDialog({
   const { user } = useAuth();
   const [showConsumptionForm, setShowConsumptionForm] = useState(false);
   const [showRejectForm, setShowRejectForm] = useState(false);
-  const [showCancelForm, setShowCancelForm] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
-  const [cancelReason, setCancelReason] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -52,7 +50,6 @@ export function BookingDetailDialog({
 
   const approveMutation = useApproveReservation();
   const rejectMutation = useRejectReservation();
-  const cancelMutation = useCancelReservation();
   const createConsumeMutation = useCreateConsume();
   const uploadFileMutation = useUploadFile();
 
@@ -61,7 +58,8 @@ export function BookingDetailDialog({
   if (isLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-sm mx-4 rounded-xl flex justify-center py-12">
+        <DialogContent className="max-w-sm mx-4 rounded-xl flex justify-center py-12" aria-describedby={undefined}>
+            <DialogTitle className="sr-only">加载中</DialogTitle>
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </DialogContent>
       </Dialog>
@@ -102,25 +100,6 @@ export function BookingDetailDialog({
         toast.success("订单已驳回");
         setShowRejectForm(false);
         setRejectReason("");
-        onOpenChange(false);
-    } catch (error) {
-        toast.error("操作失败");
-    } finally {
-        setIsSubmitting(false);
-    }
-  };
-
-  const handleCancel = async () => {
-    if (!cancelReason.trim()) {
-      toast.error("请填写取消原因");
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-        await cancelMutation.mutateAsync({ id: parseInt(bookingId!), staffId: user?.id || 0, reason: cancelReason });
-        toast.success("订单已取消");
-        setShowCancelForm(false);
-        setCancelReason("");
         onOpenChange(false);
     } catch (error) {
         toast.error("操作失败");
@@ -183,7 +162,7 @@ export function BookingDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm mx-4 rounded-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-sm mx-4 rounded-xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>订单详情</DialogTitle>
         </DialogHeader>
@@ -291,27 +270,6 @@ export function BookingDetailDialog({
             </div>
           )}
 
-          {/* Cancel Form */}
-          {showCancelForm && (
-            <div className="space-y-3 p-4 bg-accent/50 rounded-lg">
-              <p className="text-sm font-medium">请填写取消原因</p>
-              <Textarea
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="请输入取消原因..."
-                className="min-h-[80px]"
-              />
-              <div className="flex gap-3">
-                <Button variant="mobileSecondary" size="full" onClick={() => setShowCancelForm(false)}>
-                  取消
-                </Button>
-                <Button variant="danger" size="full" onClick={handleCancel} disabled={isSubmitting}>
-                  {isSubmitting ? '提交中...' : '确认取消'}
-                </Button>
-              </div>
-            </div>
-          )}
-
           {/* Consumption Request Form */}
           {showConsumptionForm && (
             <div className="space-y-3 p-4 bg-accent/50 rounded-lg">
@@ -357,7 +315,7 @@ export function BookingDetailDialog({
           )}
         </div>
 
-        {!showConsumptionForm && !showRejectForm && !showCancelForm && (
+        {!showConsumptionForm && !showRejectForm && (
           <div className="flex flex-col gap-3">
             {isReviewMode && booking.status === 'PENDING' ? (
               <div className="flex gap-3">
@@ -375,19 +333,9 @@ export function BookingDetailDialog({
             ) : (
                 <div className="flex flex-col gap-3">
                     {!isReviewMode && booking.status === 'APPROVED' && (
-                      <>
-                        <Button variant="success" size="full" onClick={() => setShowConsumptionForm(true)}>
-                            已到店消费申请
-                        </Button>
-                        <Button variant="danger" size="full" onClick={() => setShowCancelForm(true)}>
-                            取消订单
-                        </Button>
-                      </>
-                    )}
-                    {!isReviewMode && booking.status === 'PENDING' && (
-                        <Button variant="danger" size="full" onClick={() => setShowCancelForm(true)}>
-                            取消申请
-                        </Button>
+                    <Button variant="success" size="full" onClick={() => setShowConsumptionForm(true)}>
+                        已到店消费申请
+                    </Button>
                     )}
                     <Button variant="mobileSecondary" size="full" onClick={() => onOpenChange(false)}>
                         关闭

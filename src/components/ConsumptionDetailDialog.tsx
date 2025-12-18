@@ -149,7 +149,7 @@ export function ConsumptionDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm mx-4 rounded-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-sm mx-4 rounded-xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>消费确认申请详情</DialogTitle>
         </DialogHeader>

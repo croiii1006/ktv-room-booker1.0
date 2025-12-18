@@ -92,7 +92,7 @@ export default function RoomMatrix() {
   const handleCellClick = (roomId: string, date: string) => {
     const booking = getBookingByRoomAndDate(roomId, date);
     if (booking && booking.status !== 'FREE') { // Assuming FREE is default or null means free
-      setViewBookingId(booking.bookingId?.toString() || '');
+      setViewBookingId(booking.reservationId?.toString() || '');
       setViewBookingRoomId(roomId);
     } else if (!isLeader) {
       // Only salesperson can create bookings
