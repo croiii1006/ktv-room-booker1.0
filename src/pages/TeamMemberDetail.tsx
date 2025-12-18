@@ -17,6 +17,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useTeamMemberDetail, useTeamMemberReservations, useTeamMemberRecharges, useTeamMemberConsumes } from "@/queries/team-queries";
 import { useMemberList } from "@/queries/member-queries";
+import { useRoomSchedule } from "@/queries/common-queries";
+import { useReservationDetail } from "@/queries/reservation-queries";
 
 type DetailType = "customer" | "recharge" | "service" | "booking";
 
@@ -50,6 +52,30 @@ export default function TeamMemberDetail() {
   const allCustomers = membersData?.data?.data?.list || [];
   // Filter customers that belong to this staff - assuming the response contains salesId/staffId
   const customers = allCustomers.filter((c: any) => c.staffId === staffId || c.salesId === staffId);
+  
+  // Get room list for mapping room names
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const { data: scheduleData } = useRoomSchedule(todayStr, todayStr);
+  const rooms = scheduleData?.data?.data?.rooms || [];
+  const getRoomInfo = (roomId: number) => {
+    const room = rooms.find((r: any) => r.id === roomId);
+    return room ? `${room.roomType || ''} ${room.roomNo || ''}` : `房间ID:${roomId}`;
+  };
+
+  const getCustomerName = (item: any) => {
+    if (item.memberName) return item.memberName;
+    if (item.customerName) return item.customerName;
+    const customer = allCustomers.find((c: any) => c.id === item.memberId || c.id === item.customerId);
+    return customer ? customer.name : (item.memberId || item.customerId || '未知');
+  };
+
+  const getStaffName = (item: any) => {
+     if (item.applyStaffName) return item.applyStaffName;
+     if (item.salesName) return item.salesName;
+     // If the staffId matches the current member detail we are viewing
+     if (item.staffId === staffId) return member.name;
+     return item.staffId || '未知';
+  };
 
   const { data: rechargesData, isLoading: isLoadingRecharges } = useTeamMemberRecharges(staffId, 1, 100);
   const rechargeRequests = rechargesData?.data?.data?.list || [];
@@ -62,6 +88,10 @@ export default function TeamMemberDetail() {
 
   const [selected, setSelected] = useState<SelectedItem | null>(null);
 
+  // Fetch booking detail if a booking is selected
+  const selectedBookingId = selected?.type === 'booking' ? selected.data.id : 0;
+  const { data: bookingDetailData, isLoading: isLoadingBookingDetail } = useReservationDetail(selectedBookingId);
+  
   if (isLoadingMember) {
      return (
        <div className="min-h-screen bg-background flex items-center justify-center">
@@ -132,7 +162,7 @@ export default function TeamMemberDetail() {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">客户</span>
-            <span className="font-medium">{item.customerName || item.customerId}</span>
+            <span className="font-medium">{getCustomerName(item)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">充值金额</span>
@@ -161,17 +191,36 @@ export default function TeamMemberDetail() {
     }
 
     if (selected.type === "booking") {
+      // 如果正在加载详情，显示加载中
+      if (isLoadingBookingDetail) {
+         return (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+         );
+      }
+      
+      // 优先使用详情接口返回的数据，否则使用列表数据
+      // 注意：bookingDetailData.data 是 ResultReservationResp，bookingDetailData.data.data 才是 ReservationResp
+      const detailItem = bookingDetailData?.data?.data || item;
+      
       // 预定记录
-      const formattedDate = item.arrivalTime ? format(new Date(item.arrivalTime), "yyyy年MM月dd日 EEEE", {
+      // Use reserveDate instead of arrivalTime as per API response
+      const dateStr = detailItem.reserveDate || detailItem.arrivalTime;
+      const formattedDate = dateStr ? format(new Date(dateStr), "yyyy年MM月dd日 EEEE", {
         locale: zhCN,
       }) : '-';
       
       return (
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
+            <span className="text-muted-foreground">预定号</span>
+            <span className="font-medium text-xs">{detailItem.reserveNo}</span>
+          </div>
+          <div className="flex justify-between">
             <span className="text-muted-foreground">房间号</span>
             <span className="font-medium">
-               {item.roomTypeName} {item.roomNo}
+               {getRoomInfo(detailItem.roomId)}
             </span>
           </div>
           <div className="flex justify-between">
@@ -179,27 +228,37 @@ export default function TeamMemberDetail() {
             <span className="font-medium">{formattedDate}</span>
           </div>
           <div className="flex justify-between">
+            <span className="text-muted-foreground">预计人数</span>
+            <span className="font-medium">{detailItem.guestCount || 1}人</span>
+          </div>
+          <div className="flex justify-between">
             <span className="text-muted-foreground">客户</span>
-            <span className="font-medium">{item.customerName || item.customerId}</span>
+            <span className="font-medium">{detailItem.memberName || getCustomerName(detailItem)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">预定业务员</span>
             <span className="font-medium">
-              {item.salesName || item.salesStaffNo || '未知'}
+              {detailItem.applyStaffName || detailItem.salesName || getStaffName(detailItem)}
             </span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">订单状态</span>
-            <StatusBadge status={item.status || 'PENDING'} />
+            <StatusBadge status={detailItem.status || 'PENDING'} />
           </div>
+          {detailItem.remark && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">备注</span>
+              <span className="font-medium text-xs max-w-[200px] truncate">{detailItem.remark}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">创建时间</span>
-            <span className="font-medium text-xs">{item.createdAt ? format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm') : '-'}</span>
+            <span className="font-medium text-xs">{detailItem.createdAt ? format(new Date(detailItem.createdAt), 'yyyy-MM-dd HH:mm') : '-'}</span>
           </div>
-          {item.rejectReason && (
+          {detailItem.rejectReason && (
             <div>
               <p className="text-muted-foreground text-xs mb-1">驳回理由</p>
-              <p className="text-xs text-destructive">{item.rejectReason}</p>
+              <p className="text-xs text-destructive">{detailItem.rejectReason}</p>
             </div>
           )}
         </div>
@@ -216,7 +275,7 @@ export default function TeamMemberDetail() {
           <div className="flex justify-between">
             <span className="text-muted-foreground">房间号</span>
             <span className="font-medium">
-              {item.roomTypeName} {item.roomNo}
+              {getRoomInfo(item.roomId)}
             </span>
           </div>
           <div className="flex justify-between">
@@ -225,7 +284,7 @@ export default function TeamMemberDetail() {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">客户</span>
-            <span className="font-medium">{item.customerName || item.customerId}</span>
+            <span className="font-medium">{getCustomerName(item)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">服务业务员</span>
@@ -344,7 +403,7 @@ export default function TeamMemberDetail() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h3 className="font-semibold text-foreground">
-                        充值 - {request.customerName}
+                        充值 - {getCustomerName(request)}
                       </h3>
                       <p className="text-lg font-bold text-primary">
                         ¥{request.amount}
@@ -371,7 +430,9 @@ export default function TeamMemberDetail() {
                 暂无预定记录
               </p>
             ) : (
-              bookings.map((booking) => (
+              bookings.map((booking) => {
+                const dateStr = booking.reserveDate || booking.arrivalTime;
+                return (
                 <div
                   key={booking.id}
                   className="bg-card rounded-lg border border-border p-4 cursor-pointer active:bg-accent"
@@ -382,10 +443,10 @@ export default function TeamMemberDetail() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h3 className="font-semibold text-foreground">
-                        预定 - {booking.customerName}
+                        预定 - {getCustomerName(booking)}
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        {booking.arrivalTime ? format(new Date(booking.arrivalTime), "MM/dd EEEE", {
+                        {dateStr ? format(new Date(dateStr), "MM/dd EEEE", {
                           locale: zhCN,
                         }) : '-'}
                       </p>
@@ -396,7 +457,8 @@ export default function TeamMemberDetail() {
                     {booking.createdAt ? format(new Date(booking.createdAt), 'yyyy-MM-dd HH:mm') : '-'}
                   </div>
                 </div>
-              ))
+              )
+              })
             )}
           </TabsContent>
 
@@ -422,7 +484,7 @@ export default function TeamMemberDetail() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h3 className="font-semibold text-foreground">
-                        服务 - {request.customerName}
+                        服务 - {getCustomerName(request)}
                       </h3>
                       <p className="text-sm text-muted-foreground">
                         {request.bookingDate ? format(new Date(request.bookingDate), "MM/dd EEEE", {
