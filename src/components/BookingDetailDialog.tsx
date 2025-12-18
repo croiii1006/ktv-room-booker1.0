@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -45,7 +45,7 @@ export function BookingDetailDialog({
   const [imageUrl, setImageUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { data: res } = useReservationDetail(bookingId ? parseInt(bookingId) : 0);
+  const { data: res, isLoading } = useReservationDetail(bookingId ? parseInt(bookingId) : 0);
   const booking = res?.data?.data;
 
   const approveMutation = useApproveReservation();
@@ -53,8 +53,19 @@ export function BookingDetailDialog({
   const createConsumeMutation = useCreateConsume();
   const uploadFileMutation = useUploadFile();
 
-  if (!booking) return null;
   if (!open) return null;
+
+  if (isLoading) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-sm mx-4 rounded-xl flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (!booking) return null;
 
   // Use props for room info if available (since API detail might lack it)
   // Or if API has it, we could use it. Assuming props are reliable for now.
@@ -320,7 +331,7 @@ export function BookingDetailDialog({
               </div>
             ) : (
                 <div className="flex flex-col gap-3">
-                    {booking.status === 'APPROVED' && (
+                    {!isReviewMode && booking.status === 'APPROVED' && (
                     <Button variant="success" size="full" onClick={() => setShowConsumptionForm(true)}>
                         已到店消费申请
                     </Button>
