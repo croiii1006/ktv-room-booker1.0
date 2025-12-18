@@ -60,6 +60,7 @@ export default function RechargeRequestList() {
                 <div className="flex flex-wrap gap-x-4 gap-y-1">
                   <span>门店: {request.storeName}</span>
                   <span>业务员: {request.staffName}</span>
+                  {request.sourceDesc && <span>来源: {request.sourceDesc}</span>}
                 </div>
                 
                 {request.remark && (

@@ -58,13 +58,20 @@ export default function ConsumptionRequestList() {
               </div>
               
               <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t border-border/50">
-                <span>
-                    服务业务员: <StaffNameDisplay id={request.applyStaffId?.toString()} />
-                </span>
+                <div className="flex flex-col gap-1">
+                    <span>服务: <StaffNameDisplay id={request.applyStaffId?.toString()} /></span>
+                    {request.receptionStaffName && <span>接待: {request.receptionStaffName}</span>}
+                </div>
                 {request.consumeAmount !== undefined && (
-                    <span className="font-medium text-foreground">¥{request.consumeAmount}</span>
+                    <span className="font-medium text-foreground text-base">¥{request.consumeAmount}</span>
                 )}
               </div>
+              
+              {request.remark && (
+                  <div className="text-xs text-muted-foreground pt-2 border-t border-border/50">
+                    备注: {request.remark}
+                  </div>
+              )}
             </div>
           )})
         )}

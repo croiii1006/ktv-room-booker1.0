@@ -178,24 +178,40 @@ export default function TeamMemberDetail() {
               rechargeRequests.map((request) => (
                 <div
                   key={request.id}
-                  className="bg-card rounded-lg border border-border p-4 cursor-pointer active:bg-accent"
+                  className="bg-card rounded-lg border border-border p-4 cursor-pointer active:bg-accent space-y-2"
                   onClick={() =>
                     setSelected({ type: "recharge", data: request })
                   }
                 >
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="font-semibold text-foreground">
-                        充值 - <MemberNameDisplay id={request.memberId || request.customerId} initialName={resolveNameFromList(request)} />
+                      <h3 className="font-semibold text-foreground flex items-center gap-2">
+                        <span className="text-primary">充值</span>
+                        <span className="text-muted-foreground">-</span>
+                        <MemberNameDisplay id={request.memberId || request.customerId} initialName={request.memberName} />
                       </h3>
-                      <p className="text-lg font-bold text-primary">
-                        ¥{request.amount}
-                      </p>
+                      <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                         {request.applyNo && <p>单号: {request.applyNo}</p>}
+                         {request.storeName && <p>门店: {request.storeName}</p>}
+                      </div>
                     </div>
                     <RequestStatusBadge status={request.status || 'PENDING'} />
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {request.createdAt ? format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm') : '-'}
+                  
+                  <div className="py-2 border-y border-border/50 flex items-baseline gap-2">
+                    <span className="text-xl font-bold text-primary">¥{request.amount}</span>
+                    {request.giftAmount > 0 && (
+                      <span className="text-sm text-muted-foreground">(赠送: ¥{request.giftAmount})</span>
+                    )}
+                  </div>
+
+                  <div className="text-xs text-muted-foreground space-y-1">
+                      {request.sourceDesc && <p>来源: {request.sourceDesc}</p>}
+                      {request.remark && <p>备注: {request.remark}</p>}
+                      <div className="flex justify-between pt-1">
+                        <span>{request.staffName ? `业务员: ${request.staffName}` : ''}</span>
+                        <span>{request.createdAt ? format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm') : '-'}</span>
+                      </div>
                   </div>
                 </div>
               ))
@@ -218,25 +234,55 @@ export default function TeamMemberDetail() {
                 return (
                 <div
                   key={booking.id}
-                  className="bg-card rounded-lg border border-border p-4 cursor-pointer active:bg-accent"
+                  className="bg-card rounded-lg border border-border p-4 cursor-pointer active:bg-accent space-y-2"
                   onClick={() =>
                     setSelected({ type: "booking", data: booking })
                   }
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
                       <h3 className="font-semibold text-foreground">
-                        预定 - <MemberNameDisplay id={booking.memberId || booking.customerId} initialName={resolveNameFromList(booking)} />
+                        {booking.roomName || booking.roomTypeName || '未分配房间'} {booking.roomNo}
                       </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {dateStr ? format(new Date(dateStr), "MM/dd EEEE", {
-                          locale: zhCN,
-                        }) : '-'}
-                      </p>
+                      <div className="text-xs text-muted-foreground">
+                         <MemberNameDisplay id={booking.memberId || booking.customerId} initialName={booking.memberName} />
+                         {booking.guestCount ? ` · ${booking.guestCount}人` : ''}
+                         {booking.sourceDesc ? ` · ${booking.sourceDesc}` : ''}
+                      </div>
                     </div>
                     <StatusBadge status={booking.status || 'PENDING'} />
                   </div>
-                  <div className="text-xs text-muted-foreground">
+
+                  <div className="text-sm border-t border-border/50 pt-2 mt-1 space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">预定时间</span>
+                      <span>{dateStr ? format(new Date(dateStr), "MM/dd EEEE", { locale: zhCN }) : '-'}</span>
+                    </div>
+                    {booking.reserveNo && (
+                       <div className="flex justify-between text-xs text-muted-foreground">
+                         <span>订单号</span>
+                         <span>{booking.reserveNo}</span>
+                       </div>
+                    )}
+                    {booking.storeName && (
+                       <div className="flex justify-between text-xs text-muted-foreground">
+                         <span>门店</span>
+                         <span>{booking.storeName}</span>
+                       </div>
+                    )}
+                    {booking.remark && (
+                       <div className="text-xs text-muted-foreground mt-1">
+                         备注: {booking.remark}
+                       </div>
+                    )}
+                    {booking.status === 'REJECTED' && booking.cancelReason && (
+                       <div className="text-xs text-destructive mt-1">
+                         驳回原因: {booking.cancelReason}
+                       </div>
+                    )}
+                  </div>
+                  
+                  <div className="text-xs text-muted-foreground text-right pt-1">
                     {booking.createdAt ? format(new Date(booking.createdAt), 'yyyy-MM-dd HH:mm') : '-'}
                   </div>
                 </div>
@@ -259,33 +305,39 @@ export default function TeamMemberDetail() {
               consumptionRequests.map((request) => (
                 <div
                   key={request.id}
-                  className="bg-card rounded-lg border border-border p-4 cursor-pointer active:bg-accent"
+                  className="bg-card rounded-lg border border-border p-4 cursor-pointer active:bg-accent space-y-2"
                   onClick={() =>
                     setSelected({ type: "service", data: request })
                   }
                 >
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-start justify-between">
                     <div>
                       <h3 className="font-semibold text-foreground">
-                        {getRoomInfo(request.roomId)} - <MemberNameDisplay id={request.memberId || request.customerId} initialName={resolveNameFromList(request)} />
+                        {request.roomName || request.roomNo || getRoomInfo(request.roomId)}
                       </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {request.bookingDate ? format(new Date(request.bookingDate), "MM/dd EEEE", {
-                          locale: zhCN,
-                        }) : (request.createdAt ? format(new Date(request.createdAt), "MM/dd EEEE", {
-                          locale: zhCN,
-                        }) : '-')}
-                      </p>
+                       <div className="text-xs text-muted-foreground mt-1">
+                         <MemberNameDisplay id={request.memberId || request.customerId} initialName={request.memberName} />
+                         {request.storeName && ` · ${request.storeName}`}
+                      </div>
                     </div>
                     <RequestStatusBadge status={request.status || 'PENDING'} />
                   </div>
-                  <div className="flex justify-end items-center text-xs mt-2">
-                    <span className="font-bold text-primary">
-                      ¥{request.consumeAmount}
-                    </span>
+                  
+                  <div className="py-2 border-y border-border/50 flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">消费金额</span>
+                      <span className="font-bold text-primary">¥{request.consumeAmount}</span>
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {request.createdAt ? format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm') : '-'}
+
+                  <div className="text-xs text-muted-foreground space-y-1">
+                     {request.consumeNo && <p>单号: {request.consumeNo}</p>}
+                     <p>
+                        预定日期: {request.reserveDate ? format(new Date(request.reserveDate), "MM/dd EEEE", { locale: zhCN }) : '-'}
+                     </p>
+                     {request.receptionStaffName && <p>接待: {request.receptionStaffName}</p>}
+                     {request.remark && <p>备注: {request.remark}</p>}
+                     <div className="text-right pt-1">
+                        {request.createdAt ? format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm') : '-'}
+                     </div>
                   </div>
                 </div>
               ))
