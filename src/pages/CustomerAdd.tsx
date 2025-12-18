@@ -16,7 +16,7 @@ export default function CustomerAdd() {
   const { mutateAsync: addCustomer, isPending: isSubmitting } = useCreateMember();
   const { data: cardTypesData } = useCardTypeList();
   
-  const cardTypes = cardTypesData?.data || [];
+  const cardTypes = cardTypesData?.data?.data || [];
 
   const [formData, setFormData] = useState({
     name: '',
