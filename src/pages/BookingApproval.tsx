@@ -4,6 +4,7 @@ import { zhCN } from 'date-fns/locale';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { BookingDetailDialog } from '@/components/BookingDetailDialog';
+import { StaffNameDisplay } from '@/components/StaffNameDisplay';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 
@@ -62,7 +63,7 @@ export default function BookingApproval() {
                 </div>
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span>
-                    申请人: {salesName}
+                    申请人: <StaffNameDisplay id={order.salesId} initialName={salesName} />
                   </span>
                   {/* Deposit is not currently available in Booking model */}
                 </div>

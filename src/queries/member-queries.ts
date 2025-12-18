@@ -11,10 +11,11 @@ export const memberKeys = {
 };
 
 // 我的客户列表
-export const useMemberList = (page?: number, size?: number, keyword?: string) => {
+export const useMemberList = (page?: number, size?: number, keyword?: string, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: memberKeys.list(page, size, keyword),
     queryFn: () => h5Api.myMembers(page, size, keyword),
+    enabled: options?.enabled,
   });
 };
 

@@ -11,8 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useData } from '@/contexts/DataContext';
-import { getMemberDetail } from '@/services/h5-service';
 import { toast } from 'sonner';
+import { MemberNameDisplay } from './MemberNameDisplay';
+import { StaffNameDisplay } from './StaffNameDisplay';
 
 interface OrderDetailDialogProps {
   open: boolean;
@@ -27,31 +28,16 @@ export function OrderDetailDialog({
   bookingId,
   showActions,
 }: OrderDetailDialogProps) {
-  const { bookings, rooms, stores, customers, teamMembers, updateBookingStatus, user } = useData();
+  const { bookings, rooms, stores, updateBookingStatus, user } = useData();
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [reason, setReason] = useState('');
   const [showCancelForm, setShowCancelForm] = useState(false);
-  const [fetchedCustomerName, setFetchedCustomerName] = useState<string | null>(null);
 
   // Ensure we can find the room for display.
   // If fetchRoomSchedule hasn't been called for this room's date/store, 'room' might be undefined.
   // However, we can try to fall back to just finding the room by ID in the full list if available,
   // or show a placeholder name.
   const booking = bookings.find((b) => b.id === bookingId);
-
-  // Fetch customer details if name is missing
-  React.useEffect(() => {
-    if (open && booking && (!booking.customerName || booking.customerName === 'Unknown' || booking.customerName === booking.customerId)) {
-      const customer = customers.find(c => c.id === booking.customerId);
-      if (!customer) {
-        getMemberDetail(parseInt(booking.customerId)).then(res => {
-          if (res && res.name) setFetchedCustomerName(res.name);
-        }).catch(() => {});
-      }
-    } else {
-        setFetchedCustomerName(null);
-    }
-  }, [open, booking, customers]);
 
   const room = booking ? rooms.find((r) => r.id === booking.roomId) : null;
 
@@ -64,26 +50,6 @@ export function OrderDetailDialog({
   const roomStoreId = room?.storeId || '1'; // Fallback
   const store = stores.find(s => s.id === roomStoreId);
   const storeName = store?.name || '未知门店';
-
-  // Find customer name from ID if not present in booking
-  let customerName = booking.customerName;
-  if (!customerName || customerName === 'Unknown' || customerName === booking.customerId) {
-      const customer = customers.find(c => c.id === booking.customerId);
-      if (customer) customerName = customer.name;
-      else if (fetchedCustomerName) customerName = fetchedCustomerName;
-  }
-
-  // Find sales name from ID if not present or is ID
-  let salesName = booking.salesName;
-  if (!salesName || salesName === 'Unknown' || salesName === booking.salesId) {
-      // Try to find in team members if available
-      const staff = teamMembers.find(t => t.id === booking.salesId || t.staffNo === booking.salesStaffNo);
-      if (staff) salesName = staff.name;
-      // If still unknown and it's me
-      else if (user && (user.id.toString() === booking.salesId || user.staffNo === booking.salesStaffNo)) {
-          salesName = user.name;
-      }
-  }
 
   const formattedDate = format(new Date(booking.date), 'yyyy年MM月dd日 EEEE', {
     locale: zhCN,
@@ -146,7 +112,9 @@ export function OrderDetailDialog({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">客户</span>
-              <span className="font-medium">{customerName}</span>
+              <span className="font-medium">
+                <MemberNameDisplay id={booking.customerId} initialName={booking.customerName} />
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">价格</span>
@@ -155,7 +123,7 @@ export function OrderDetailDialog({
             <div className="flex justify-between">
               <span className="text-muted-foreground">申请人</span>
               <span className="font-medium">
-                {salesName} ({booking.salesStaffNo})
+                <StaffNameDisplay id={booking.salesId} initialName={booking.salesName} staffNo={booking.salesStaffNo} showStaffNo />
               </span>
             </div>
             <div className="flex justify-between">

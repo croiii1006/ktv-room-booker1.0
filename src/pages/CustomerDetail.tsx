@@ -80,13 +80,13 @@ export default function CustomerDetail() {
 
         {/* Info Card */}
         <div className="bg-card rounded-lg border border-border divide-y divide-border">
-          <InfoRow label="客户姓名" value={customer.name} />
+          <InfoRow label="客户姓名" value={<MemberNameDisplay id={customer.id} initialName={customer.name} />} />
           <InfoRow label="客户编号" value={customer.id} />
           <InfoRow label="会员卡号" value={customer.cardNo || '-'} />
           <InfoRow label="手机号" value={customer.phone} />
           <InfoRow label="卡类型" value={`${customer.cardType}`} />
           {customer.storeName && <InfoRow label="所属门店" value={customer.storeName} />}
-          {customer.staffName && <InfoRow label="所属业务员" value={customer.staffName} />}
+          {customer.staffName && <InfoRow label="所属业务员" value={<StaffNameDisplay id={customer.salesId} initialName={customer.staffName} />} />}
           <InfoRow label="开卡日期" value={customer.openDate} />
         </div>
 
@@ -112,7 +112,7 @@ export default function CustomerDetail() {
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between px-4 py-3">
       <span className="text-muted-foreground">{label}</span>

@@ -10,6 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { RequestStatusBadge } from '@/components/RequestStatusBadge';
 import { useData } from '@/contexts/DataContext';
 import { toast } from 'sonner';
+import { MemberNameDisplay } from './MemberNameDisplay';
+import { StaffNameDisplay } from './StaffNameDisplay';
 
 interface RechargeDetailDialogProps {
   open: boolean;
@@ -90,7 +92,12 @@ export function RechargeDetailDialog({
             <div className="flex justify-between">
               <span className="text-muted-foreground">申请人</span>
               <span className="font-medium">
-                {salesName} ({request.salesStaffNo})
+                <StaffNameDisplay 
+                  id={request.salesId} 
+                  initialName={salesName} 
+                  staffNo={request.salesStaffNo}
+                  showStaffNo
+                />
               </span>
             </div>
             <div className="flex justify-between">

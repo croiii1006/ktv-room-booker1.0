@@ -12,7 +12,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useData } from '@/contexts/DataContext';
 import { toast } from 'sonner';
-import { getStaffDetail } from '@/services/h5-service';
+import { MemberNameDisplay } from './MemberNameDisplay';
+import { StaffNameDisplay } from './StaffNameDisplay';
 
 interface LeaderBookingDetailDialogProps {
   open: boolean;
@@ -29,28 +30,8 @@ export function LeaderBookingDetailDialog({
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [reason, setReason] = useState('');
-  const [salesRealName, setSalesRealName] = useState('');
 
   const booking = bookings.find((b) => b.id === bookingId);
-
-  React.useEffect(() => {
-    if (booking?.salesId) {
-      const id = parseInt(booking.salesId);
-      if (!isNaN(id)) {
-        getStaffDetail(id)
-          .then((res) => {
-            if (res.code === 200 && res.data) {
-              setSalesRealName(res.data.name || '');
-            }
-          })
-          .catch((err) => {
-            console.error('Failed to fetch staff name', err);
-          });
-      }
-    } else {
-      setSalesRealName('');
-    }
-  }, [booking?.salesId]);
 
   // Handle free cell view
   if (bookingId.startsWith('free_')) {
@@ -165,7 +146,9 @@ export function LeaderBookingDetailDialog({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">客户</span>
-              <span className="font-medium">{booking.customerName}</span>
+              <span className="font-medium">
+                <MemberNameDisplay id={booking.customerId} initialName={booking.customerName} />
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">价格</span>
@@ -174,14 +157,14 @@ export function LeaderBookingDetailDialog({
             <div className="flex justify-between">
               <span className="text-muted-foreground">预定业务员</span>
               <span className="font-medium">
-                {salesRealName || booking.salesName} ({booking.salesStaffNo})
+                <StaffNameDisplay id={booking.salesId} initialName={booking.salesName} staffNo={booking.salesStaffNo} showStaffNo />
               </span>
             </div>
             {booking.serviceSalesName && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">服务业务员</span>
                 <span className="font-medium">
-                  {booking.serviceSalesName} ({booking.serviceSalesStaffNo})
+                  <StaffNameDisplay id={booking.serviceSalesId} initialName={booking.serviceSalesName} staffNo={booking.serviceSalesStaffNo} showStaffNo />
                 </span>
               </div>
             )}

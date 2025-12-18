@@ -4,6 +4,8 @@ import { zhCN } from 'date-fns/locale';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { OrderDetailDialog } from '@/components/OrderDetailDialog';
+import { MemberNameDisplay } from '@/components/MemberNameDisplay';
+import { StaffNameDisplay } from '@/components/StaffNameDisplay';
 import { useData } from '@/contexts/DataContext';
 
 export default function ApprovalList() {
@@ -44,7 +46,7 @@ export default function ApprovalList() {
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <h3 className="font-semibold text-foreground">
-                      {room?.name}房 - {order.customerName}
+                      {room?.name}房 - <MemberNameDisplay id={order.customerId} initialName={order.customerName} />
                     </h3>
                     <p className="text-sm text-muted-foreground mt-0.5">
                       {formattedDate}
@@ -54,7 +56,7 @@ export default function ApprovalList() {
                 </div>
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span>
-                    申请人: {order.salesName} ({order.salesStaffNo})
+                    申请人: <StaffNameDisplay id={order.salesId} initialName={order.salesName} staffNo={order.salesStaffNo} showStaffNo />
                   </span>
                   <span className="font-medium text-foreground">¥{order.price}</span>
                 </div>

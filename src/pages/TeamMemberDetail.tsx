@@ -20,6 +20,8 @@ import { useMemberList } from "@/queries/member-queries";
 import { useRoomSchedule } from "@/queries/common-queries";
 import { useReservationDetail } from "@/queries/reservation-queries";
 import { useConsumeDetail } from "@/queries/consume-queries";
+import { MemberNameDisplay } from "@/components/MemberNameDisplay";
+import { StaffNameDisplay } from "@/components/StaffNameDisplay";
 
 type DetailType = "customer" | "recharge" | "service" | "booking";
 
@@ -50,7 +52,7 @@ export default function TeamMemberDetail() {
   // HOWEVER, looking at h5-api.ts, `myMembers` takes page, size, keyword. 
   // If we can't get customers by staffId, we might skip this tab or show empty for now, or assume leader sees all.
   // Let's try useMemberList() and see if it works for leader (returning all).
-  const { data: membersData } = useMemberList(1, 100); 
+  const { data: membersData } = useMemberList(1, 100, undefined, { enabled: false }); 
   const allCustomers = membersData?.data?.data?.list || [];
   // Filter customers that belong to this staff - assuming the response contains salesId/staffId
   const customers = allCustomers.filter((c: any) => c.staffId === staffId || c.salesId === staffId);
@@ -68,33 +70,8 @@ export default function TeamMemberDetail() {
     return room ? `${room.roomType || ''} ${room.roomNo || ''}` : `房间ID:${roomId}`;
   };
 
-  const getCustomerName = (item: any) => {
-    if (item.memberName) return item.memberName;
-    if (item.customerName) return item.customerName;
-    const customer = allCustomers.find((c: any) => c.id === item.memberId || c.id === item.customerId);
-    return customer ? customer.name : (item.memberId || item.customerId || '未知');
-  };
-
-  const getStaffName = (item: any) => {
-     if (item.applyStaffName) return item.applyStaffName;
-     if (item.salesName) return item.salesName;
-     if (item.serviceStaffName) return item.serviceStaffName;
-     
-     // Check if any staff ID field matches the current member
-     const ids = [item.staffId, item.applyStaffId, item.receptionStaffId, item.salesStaffNo];
-     const matchedId = ids.find(id => id);
-     
-     if (matchedId) {
-       // First try to find in loaded staff list
-       const staff = allStaffs.find((s: any) => s.id === Number(matchedId));
-       if (staff) return staff.name;
-       
-       // Fallback to current member if ID matches
-       if (Number(matchedId) === Number(staffId)) return member?.name;
-     }
-     
-     // Return the first available ID if name is not found
-     return item.staffId || item.applyStaffId || item.receptionStaffId || item.salesStaffNo || '未知';
+  const resolveNameFromList = (item: any) => {
+    return undefined;
   };
 
   const { data: rechargesData, isLoading: isLoadingRecharges } = useTeamMemberRecharges(staffId, 1, 100);
@@ -145,7 +122,7 @@ export default function TeamMemberDetail() {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">客户姓名</span>
-            <span className="font-medium">{item.name}</span>
+            <span className="font-medium"><MemberNameDisplay id={item.id} initialName={item.name} /></span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">客户编号</span>
@@ -186,7 +163,7 @@ export default function TeamMemberDetail() {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">客户</span>
-            <span className="font-medium">{getCustomerName(item)}</span>
+            <span className="font-medium"><MemberNameDisplay id={item.memberId || item.customerId} initialName={resolveNameFromList(item)} /></span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">充值金额</span>
@@ -257,12 +234,15 @@ export default function TeamMemberDetail() {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">客户</span>
-            <span className="font-medium">{detailItem.memberName || getCustomerName(detailItem)}</span>
+            <span className="font-medium"><MemberNameDisplay id={detailItem.memberId || detailItem.customerId} initialName={detailItem.memberName || resolveNameFromList(detailItem)} /></span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">预定业务员</span>
             <span className="font-medium">
-              {detailItem.applyStaffName || detailItem.salesName || getStaffName(detailItem)}
+              <StaffNameDisplay 
+                id={detailItem.applyStaffId || detailItem.salesId} 
+                initialName={detailItem.applyStaffName || detailItem.salesName} 
+              />
             </span>
           </div>
           <div className="flex justify-between">
@@ -334,12 +314,15 @@ export default function TeamMemberDetail() {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">客户</span>
-            <span className="font-medium">{detailItem.memberName || getCustomerName(detailItem)}</span>
+            <span className="font-medium"><MemberNameDisplay id={detailItem.memberId || detailItem.customerId} initialName={detailItem.memberName || resolveNameFromList(detailItem)} /></span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">服务业务员</span>
             <span className="font-medium">
-              {detailItem.applyStaffName || detailItem.serviceStaffName || getStaffName(detailItem) || '未知'}
+              <StaffNameDisplay 
+                id={detailItem.applyStaffId || detailItem.serviceStaffId} 
+                initialName={detailItem.applyStaffName || detailItem.serviceStaffName} 
+              />
             </span>
           </div>
           <div className="flex justify-between">
@@ -477,7 +460,7 @@ export default function TeamMemberDetail() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h3 className="font-semibold text-foreground">
-                        充值 - {getCustomerName(request)}
+                        充值 - <MemberNameDisplay id={request.memberId || request.customerId} initialName={resolveNameFromList(request)} />
                       </h3>
                       <p className="text-lg font-bold text-primary">
                         ¥{request.amount}
@@ -517,7 +500,7 @@ export default function TeamMemberDetail() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h3 className="font-semibold text-foreground">
-                        预定 - {getCustomerName(booking)}
+                        预定 - <MemberNameDisplay id={booking.memberId || booking.customerId} initialName={resolveNameFromList(booking)} />
                       </h3>
                       <p className="text-sm text-muted-foreground">
                         {dateStr ? format(new Date(dateStr), "MM/dd EEEE", {
@@ -558,7 +541,7 @@ export default function TeamMemberDetail() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h3 className="font-semibold text-foreground">
-                        {getRoomInfo(request.roomId)} - {getCustomerName(request)}
+                        {getRoomInfo(request.roomId)} - <MemberNameDisplay id={request.memberId || request.customerId} initialName={resolveNameFromList(request)} />
                       </h3>
                       <p className="text-sm text-muted-foreground">
                         {request.bookingDate ? format(new Date(request.bookingDate), "MM/dd EEEE", {

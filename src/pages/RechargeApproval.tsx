@@ -3,6 +3,8 @@ import { format } from 'date-fns';
 import { PageHeader } from '@/components/PageHeader';
 import { RequestStatusBadge } from '@/components/RequestStatusBadge';
 import { RechargeDetailDialog } from '@/components/RechargeDetailDialog';
+import { MemberNameDisplay } from '@/components/MemberNameDisplay';
+import { StaffNameDisplay } from '@/components/StaffNameDisplay';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 
@@ -43,7 +45,7 @@ export default function RechargeApproval() {
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <h3 className="font-semibold text-foreground">
-                    {request.customerName}
+                    <MemberNameDisplay id={request.memberId || request.customerId} initialName={request.customerName} />
                   </h3>
                   <p className="text-lg font-bold text-primary mt-1">
                     ¥{request.amount.toLocaleString()}
@@ -52,7 +54,7 @@ export default function RechargeApproval() {
                 <RequestStatusBadge status={request.status} />
               </div>
               <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>申请人: {salesName}</span>
+                <span>申请人: <StaffNameDisplay id={request.salesId} initialName={salesName} /></span>
               </div>
               {/* DataContext stores gift amount in giftProduct string like "送100", let's parse or use giftProduct if amount is missing */}
               {/* Actually DataContext RechargeRequest has giftProduct string, but we can try to parse it if we want amount. */}

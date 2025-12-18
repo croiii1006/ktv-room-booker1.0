@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { RequestStatusBadge } from "@/components/RequestStatusBadge";
 import { useData } from "@/contexts/DataContext";
 import { toast } from "sonner";
+import { MemberNameDisplay } from './MemberNameDisplay';
+import { StaffNameDisplay } from './StaffNameDisplay';
 
 import { getReservationDetail, getStaffDetail } from "@/services/h5-service";
 
@@ -200,18 +202,30 @@ export function ConsumptionDetailDialog({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">客户</span>
-              <span className="font-medium">{request.customerName}</span>
+              <span className="font-medium">
+                <MemberNameDisplay id={request.memberId || request.customerId} initialName={request.customerName} />
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">预定业务员</span>
               <span className="font-medium">
-                  {bookingSalesName}
+                <StaffNameDisplay 
+                  id={request.bookingSalesId} 
+                  initialName={bookingSalesName} 
+                  staffNo={bookingSalesStaffNo}
+                  showStaffNo
+                />
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">服务业务员</span>
               <span className="font-medium">
-                {serviceSalesName}
+                <StaffNameDisplay 
+                  id={request.serviceSalesId} 
+                  initialName={serviceSalesName} 
+                  staffNo={request.serviceSalesStaffNo}
+                  showStaffNo
+                />
               </span>
             </div>
             <div className="flex justify-between">

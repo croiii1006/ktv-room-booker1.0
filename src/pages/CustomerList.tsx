@@ -4,6 +4,8 @@ import { Plus } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMemberList } from '@/queries/member-queries';
+import { MemberNameDisplay } from '@/components/MemberNameDisplay';
+import { StaffNameDisplay } from '@/components/StaffNameDisplay';
 
 export default function CustomerList() {
   const navigate = useNavigate();
