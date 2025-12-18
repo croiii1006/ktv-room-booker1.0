@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useTeamMemberDetail, useTeamMemberReservations, useTeamMemberRecharges, useTeamMemberConsumes } from "@/queries/team-queries";
+import { useTeamMemberDetail, useTeamMemberReservations, useTeamMemberRecharges, useTeamMemberConsumes, useTeamList } from "@/queries/team-queries";
 import { useMemberList } from "@/queries/member-queries";
 import { useRoomSchedule } from "@/queries/common-queries";
 import { useReservationDetail } from "@/queries/reservation-queries";
@@ -54,6 +54,10 @@ export default function TeamMemberDetail() {
   // Filter customers that belong to this staff - assuming the response contains salesId/staffId
   const customers = allCustomers.filter((c: any) => c.staffId === staffId || c.salesId === staffId);
   
+  // Get all staffs to map staff names
+  const { data: teamData } = useTeamList(1, 100);
+  const allStaffs = teamData?.data?.data?.list || [];
+
   // Get room list for mapping room names
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const { data: scheduleData } = useRoomSchedule(todayStr, todayStr);
@@ -77,8 +81,15 @@ export default function TeamMemberDetail() {
      
      // Check if any staff ID field matches the current member
      const ids = [item.staffId, item.applyStaffId, item.receptionStaffId, item.salesStaffNo];
-     if (ids.some(id => id && Number(id) === Number(staffId))) {
-         return member.name;
+     const matchedId = ids.find(id => id);
+     
+     if (matchedId) {
+       // First try to find in loaded staff list
+       const staff = allStaffs.find((s: any) => s.id === matchedId);
+       if (staff) return staff.name;
+       
+       // Fallback to current member if ID matches
+       if (Number(matchedId) === Number(staffId)) return member?.name;
      }
      
      // Return the first available ID if name is not found
@@ -327,7 +338,7 @@ export default function TeamMemberDetail() {
           <div className="flex justify-between">
             <span className="text-muted-foreground">服务业务员</span>
             <span className="font-medium">
-              {detailItem.applyStaffName || detailItem.serviceStaffName || getStaffName(detailItem)}
+              {detailItem.applyStaffName || detailItem.serviceStaffName || getStaffName(detailItem) || '未知'}
             </span>
           </div>
           <div className="flex justify-between">
