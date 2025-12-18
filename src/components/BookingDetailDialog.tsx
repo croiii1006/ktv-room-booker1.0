@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,6 +44,8 @@ export function BookingDetailDialog({
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [consumeAmount, setConsumeAmount] = useState('');
+  const [remark, setRemark] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { data: res, isLoading } = useReservationDetail(bookingId ? parseInt(bookingId) : 0);
@@ -109,6 +112,11 @@ export function BookingDetailDialog({
   };
 
   const handleConsumptionRequest = async () => {
+    if (!consumeAmount || parseFloat(consumeAmount) <= 0) {
+      toast.error('请输入有效的消费金额');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
         await createConsumeMutation.mutateAsync({
@@ -117,23 +125,16 @@ export function BookingDetailDialog({
             roomId: booking.roomId,
             reservationId: booking.id,
             applyStaffId: user?.id || 0,
-            consumeAmount: 0, // Should this be 0 or input? Dialog UI doesn't have amount input for consumption request, implies confirmation of arrival?
-            // "已到店消费申请" -> confirm arrival and create consume request.
-            remark: '',
-            // imageUrl is not in CreateReq? API doc says ConsumeApplyCreateReq doesn't have imageUrl? 
-            // Wait, previous code used imageUrl. Let's check ConsumeApplyCreateReq again.
-            // It was NOT in the model I read. Maybe I missed it or it's not supported.
-            // If previous code passed it, maybe the API supports it but TS def is missing?
-            // Or maybe it passes it in remark?
-            // For now I'll omit it if TS complains, or add it if I cast.
+            consumeAmount: parseFloat(consumeAmount),
+            remark: remark,
+            voucherUrls: imageUrl ? [imageUrl] : [],
         });
-        
-        // If imageUrl is needed, we might need a separate API or update the req model.
-        // Assuming createConsumeMutation handles it or we ignore it for now as per model.
         
         toast.success('消费申请提交成功');
         setShowConsumptionForm(false);
         setImageUrl('');
+        setConsumeAmount('');
+        setRemark('');
         onOpenChange(false);
     } catch (error) {
         toast.error('提交失败');
@@ -273,8 +274,21 @@ export function BookingDetailDialog({
           {/* Consumption Request Form */}
           {showConsumptionForm && (
             <div className="space-y-3 p-4 bg-accent/50 rounded-lg">
-              <p className="text-sm font-medium">提交到店消费凭证（可选）</p>
-              {imageUrl ? (
+              <p className="text-sm font-medium">提交到店消费申请</p>
+              
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">消费金额 <span className="text-destructive">*</span></label>
+                <Input 
+                    type="number" 
+                    placeholder="请输入消费金额" 
+                    value={consumeAmount}
+                    onChange={(e) => setConsumeAmount(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">上传凭证</label>
+                {imageUrl ? (
                 <div className="relative">
                   <img src={imageUrl} alt="凭证" className="w-full h-32 object-cover rounded-lg" />
                   <button
@@ -303,7 +317,19 @@ export function BookingDetailDialog({
                   </div>
                 </div>
               )}
-              <div className="flex gap-3">
+              </div>
+
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">备注</label>
+                <Textarea 
+                    placeholder="请输入备注 (可选)" 
+                    value={remark}
+                    onChange={(e) => setRemark(e.target.value)}
+                    className="min-h-[60px]"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
                 <Button variant="mobileSecondary" size="full" onClick={() => setShowConsumptionForm(false)}>
                   取消
                 </Button>

@@ -67,6 +67,12 @@ export interface ConsumeApplyCreateReq {
      * @memberof ConsumeApplyCreateReq
      */
     remark?: string;
+    /**
+     * 凭证图片列表
+     * @type {Array<string>}
+     * @memberof ConsumeApplyCreateReq
+     */
+    voucherUrls?: Array<string>;
 }
 
 
