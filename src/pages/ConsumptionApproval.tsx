@@ -42,8 +42,8 @@ export default function ConsumptionApproval() {
             <p className="text-muted-foreground">暂无待审核消费确认申请</p>
           </div>
         ) : (
-          pendingRequests.map((request) => {
-            const roomDisplay = request.roomTypeName ? `${request.roomTypeName} ${request.roomNo}` : (request.roomNo || '未知房间');
+          pendingRequests.map((request: any) => {
+            const roomDisplay = request.roomTypeName ? `${request.roomTypeName} ${request.roomNo}` : (request.roomName || request.roomNo || '未知房间');
             const dateDisplay = request.reserveDate ? format(new Date(request.reserveDate), 'MM/dd EEEE', { locale: zhCN }) : '-';
             
             return (
@@ -63,13 +63,27 @@ export default function ConsumptionApproval() {
                 </div>
                 <RequestStatusBadge status={request.status || 'PENDING'} />
               </div>
+
+              <div className="flex items-center justify-between mb-2">
+                 <span className="text-sm text-muted-foreground">消费金额:</span>
+                 <span className="text-lg font-bold text-red-500">¥{Number(request.consumeAmount || 0).toFixed(2)}</span>
+              </div>
+
               <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>服务业务员: <StaffNameDisplay id={request.applyStaffId?.toString()} initialName={request.serviceSalesName} /></span>
+                <span>服务业务员: <StaffNameDisplay id={request.applyStaffId?.toString()} initialName={request.applyStaffName || request.serviceSalesName} /></span>
               </div>
               {request.bookingSalesName && (
                 <div className="text-xs text-muted-foreground mt-1">
                   预定业务员: {request.bookingSalesName}
                 </div>
+              )}
+              <div className="text-xs text-muted-foreground mt-1">
+                 单号: {request.consumeNo}
+              </div>
+              {request.remark && (
+                  <div className="text-xs text-muted-foreground mt-1 truncate">
+                    备注: {request.remark}
+                  </div>
               )}
               <div className="text-xs text-muted-foreground mt-1">
                 {request.createdAt ? format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm') : ''}

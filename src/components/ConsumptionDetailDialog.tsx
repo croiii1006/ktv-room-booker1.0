@@ -225,6 +225,12 @@ export function ConsumptionDetailDialog({
                 <span className="font-medium">¥{request.useGiftAmount}</span>
               </div>
             )}
+            {request.remark && (
+              <div className="flex justify-between items-start">
+                <span className="text-muted-foreground shrink-0 mr-4">备注</span>
+                <span className="font-medium text-right break-words text-sm">{request.remark}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">申请时间</span>
               <span className="font-medium text-sm">{request.createdAt}</span>
