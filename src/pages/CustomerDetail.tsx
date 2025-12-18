@@ -1,5 +1,6 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { useMemberDetail } from '@/queries/member-queries';
@@ -22,7 +23,7 @@ export default function CustomerDetail() {
     );
   }
 
-  if (error || !detailData?.data) {
+  if (error || !detailData?.data || !detailData.data.success || !detailData.data.data) {
      return (
       <div className="min-h-screen bg-background">
         <PageHeader title="客户详情" />
@@ -33,7 +34,7 @@ export default function CustomerDetail() {
     );
   }
 
-  const m = detailData.data;
+  const m = detailData.data.data;
   // Adapter to match existing UI usage or use data directly
   const customer = {
     id: m.id?.toString() || '',
@@ -42,14 +43,17 @@ export default function CustomerDetail() {
     idCard: '', 
     cardType: m.cardTypeName || '普',
     cardTypeId: m.cardTypeId,
-    openDate: m.createdAt || '',
+    openDate: m.createdAt ? format(new Date(m.createdAt), 'yyyy-MM-dd HH:mm') : '-',
     balance: m.balance || 0,
     giftAmount: m.giftBalance || 0,
     salesId: m.staffId?.toString() || '',
+    storeName: m.storeName || '',
+    staffName: m.staffName || '',
+    cardNo: m.cardNo || '',
   };
 
   const handleBookRoom = () => {
-    navigate('/rooms', { state: { selectedCustomerId: customer.id } });
+    navigate(`/rooms/${customer.id}`);
   };
 
   const handleRecharge = () => {
@@ -78,9 +82,11 @@ export default function CustomerDetail() {
         <div className="bg-card rounded-lg border border-border divide-y divide-border">
           <InfoRow label="客户姓名" value={customer.name} />
           <InfoRow label="客户编号" value={customer.id} />
+          <InfoRow label="会员卡号" value={customer.cardNo || '-'} />
           <InfoRow label="手机号" value={customer.phone} />
-          <InfoRow label="身份证号" value={customer.idCard || '-'} />
-          <InfoRow label="卡类型" value={`${customer.cardType}卡会员`} />
+          <InfoRow label="卡类型" value={`${customer.cardType}`} />
+          {customer.storeName && <InfoRow label="所属门店" value={customer.storeName} />}
+          {customer.staffName && <InfoRow label="所属业务员" value={customer.staffName} />}
           <InfoRow label="开卡日期" value={customer.openDate} />
         </div>
 

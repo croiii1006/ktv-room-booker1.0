@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { format, addDays, addWeeks } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -22,6 +22,7 @@ import { useStoreList, useRoomSchedule } from '@/queries/common-queries';
 
 export default function RoomMatrix() {
   const location = useLocation();
+  const { customerId } = useParams<{ customerId: string }>();
   const { user } = useAuth();
   
   const { data: storeData } = useStoreList();
@@ -32,7 +33,7 @@ export default function RoomMatrix() {
   const [selectedStoreId, setSelectedStoreId] = useState('');
   const [weekOffset, setWeekOffset] = useState(0);
 
-  const preselectedCustomerId = location.state?.selectedCustomerId;
+  const preselectedCustomerId = customerId || location.state?.selectedCustomerId;
   const isLeader = user?.role === 'leader';
 
   // Generate 7 days starting from today + week offset

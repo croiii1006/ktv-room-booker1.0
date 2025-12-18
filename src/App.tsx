@@ -82,6 +82,14 @@ const App = () => (
                 }
               />
               <Route
+                path="/rooms/:customerId"
+                element={
+                  <ProtectedRoute>
+                    <RoomMatrix />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/orders"
                 element={
                   <ProtectedRoute>

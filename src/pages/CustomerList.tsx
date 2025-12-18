@@ -53,15 +53,31 @@ export default function CustomerList() {
               onClick={() => navigate(`/customers/${customer.id}`)}
               className="bg-card rounded-lg border border-border p-4 flex items-center justify-between active:bg-accent transition-colors cursor-pointer animate-fade-in"
             >
-              <div>
-                <h3 className="font-semibold text-foreground">{customer.name}</h3>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  {customer.cardType}卡会员
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-foreground">{customer.name}</h3>
+                  <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                    {customer.cardTypeName || '普通会员'}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  卡号: {customer.cardNo}
                 </p>
+                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
+                   {customer.storeName && <span>门店: {customer.storeName}</span>}
+                   {customer.staffName && <span>业务员: {customer.staffName}</span>}
+                </div>
               </div>
-              <div className="text-right">
-                <p className="text-lg font-bold text-foreground">¥{customer.balance.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">余额</p>
+              <div className="text-right ml-4">
+                <p className="text-lg font-bold text-foreground">¥{(customer.balance || 0).toLocaleString()}</p>
+                <div className="flex flex-col items-end">
+                  <p className="text-xs text-muted-foreground">余额</p>
+                  {(customer.giftBalance || 0) > 0 && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      赠送: ¥{customer.giftBalance?.toLocaleString()}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           ))
