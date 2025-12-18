@@ -161,9 +161,21 @@ export function BookingDetailDialog({
           </div>
 
           <div className="bg-secondary/50 rounded-lg p-4 space-y-3">
+            {booking.storeName && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">门店</span>
+                <span className="font-medium">{booking.storeName}</span>
+              </div>
+            )}
+            {booking.reserveNo && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">订单号</span>
+                <span className="font-medium text-xs">{booking.reserveNo}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">房号</span>
-              <span className="font-medium">{roomNo || '-'}</span>
+              <span className="font-medium">{roomNo || booking.roomNo || '-'}</span>
             </div>
             {roomType && (
               <div className="flex justify-between">
@@ -173,12 +185,22 @@ export function BookingDetailDialog({
             )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">房名</span>
-              <span className="font-medium">{roomName || '未知房间'}</span>
+              <span className="font-medium">{roomName || booking.roomName || '未知房间'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">预定日期</span>
               <span className="font-medium">{formattedDate}</span>
             </div>
+            <div className="flex justify-between">
+               <span className="text-muted-foreground">人数</span>
+               <span className="font-medium">{booking.guestCount ? `${booking.guestCount}人` : '-'}</span>
+            </div>
+             {booking.sourceDesc && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">来源</span>
+                <span className="font-medium">{booking.sourceDesc}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">客户</span>
               <span className="font-medium">
@@ -201,6 +223,12 @@ export function BookingDetailDialog({
                 <span className="font-medium">
                   <StaffNameDisplay id={booking.serviceStaffName} initialName={booking.serviceStaffName} />
                 </span>
+              </div>
+            )}
+            {booking.remark && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">备注</span>
+                <span className="font-medium">{booking.remark}</span>
               </div>
             )}
             <div className="flex justify-between">

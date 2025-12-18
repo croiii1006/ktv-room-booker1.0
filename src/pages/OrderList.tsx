@@ -7,6 +7,8 @@ import { BookingDetailDialog } from '@/components/BookingDetailDialog';
 import { useReservationList } from '@/queries/reservation-queries';
 import { format } from 'date-fns';
 
+import { MemberNameDisplay } from '@/components/MemberNameDisplay';
+
 export default function OrderList() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -72,10 +74,19 @@ export default function OrderList() {
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-semibold text-foreground">{booking.roomTypeName} {booking.roomNo}</h3>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    {booking.customerName} · {booking.customerPhone}
-                  </p>
+                  <h3 className="font-semibold text-foreground">
+                    {booking.storeName && <span className="mr-2 text-sm text-muted-foreground">[{booking.storeName}]</span>}
+                    {booking.roomName || booking.roomTypeName} {booking.roomNo}
+                  </h3>
+                  <div className="text-sm text-muted-foreground mt-0.5 space-y-1">
+                    {booking.reserveNo && <p>订单号: {booking.reserveNo}</p>}
+                    <p>
+                       {booking.guestCount ? `${booking.guestCount}人` : ''} 
+                       {booking.sourceDesc ? ` · ${booking.sourceDesc}` : ''}
+                       {' · '}
+                       <MemberNameDisplay id={booking.memberId?.toString()} initialName={booking.memberName} />
+                    </p>
+                  </div>
                 </div>
                 <StatusBadge status={booking.status || 'PENDING'} />
               </div>
@@ -83,7 +94,25 @@ export default function OrderList() {
               <div className="text-sm text-muted-foreground space-y-1">
                 <div className="flex justify-between">
                   <span>到店时间</span>
-                  <span>{booking.arrivalTime ? format(new Date(booking.arrivalTime), 'MM-dd HH:mm') : '-'}</span>
+                  <span>
+                    {(() => {
+                      if (booking.arrivalTime) {
+                        return format(new Date(booking.arrivalTime), 'MM-dd HH:mm');
+                      }
+                      if (booking.reserveDate) {
+                        try {
+                          const date = new Date(booking.reserveDate);
+                           if (booking.startMin !== undefined) {
+                             date.setMinutes(date.getMinutes() + booking.startMin);
+                           }
+                           return format(date, 'MM-dd HH:mm');
+                        } catch (e) {
+                          return '-';
+                        }
+                      }
+                      return '-';
+                    })()}
+                  </span>
                 </div>
                 {booking.deposit > 0 && (
                    <div className="flex justify-between">

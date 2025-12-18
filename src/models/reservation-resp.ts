@@ -62,6 +62,30 @@ export interface ReservationResp {
      */
     roomNo?: string;
     /**
+     * 门店名称
+     * @type {string}
+     * @memberof ReservationResp
+     */
+    storeName?: string;
+    /**
+     * 房间名称
+     * @type {string}
+     * @memberof ReservationResp
+     */
+    roomName?: string;
+    /**
+     * 房间号
+     * @type {string}
+     * @memberof ReservationResp
+     */
+    roomNo?: string;
+    /**
+     * 房型名称
+     * @type {string}
+     * @memberof ReservationResp
+     */
+    roomTypeName?: string;
+    /**
      * 会员ID
      * @type {number}
      * @memberof ReservationResp
