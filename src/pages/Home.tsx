@@ -87,7 +87,7 @@ export default function Home() {
               className="justify-start px-5"
             >
               <ShoppingBag className="w-6 h-6 mr-3 text-primary" />
-              确认消费申请
+              消费申请
             </Button>
           </>
         ) : (
@@ -139,7 +139,7 @@ export default function Home() {
               className="justify-start px-5"
             >
               <ShoppingBag className="w-6 h-6 mr-3 text-primary" />
-              确认消费申请审核
+              消费申请审核
             </Button>
           </>
         )}

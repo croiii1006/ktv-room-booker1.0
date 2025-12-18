@@ -6,6 +6,8 @@ import { RequestStatusBadge } from '@/components/RequestStatusBadge';
 import { ConsumptionDetailDialog } from '@/components/ConsumptionDetailDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConsumeList } from '@/queries/consume-queries';
+import { MemberNameDisplay } from '@/components/MemberNameDisplay';
+import { StaffNameDisplay } from '@/components/StaffNameDisplay';
 
 export default function ConsumptionRequestList() {
   const { user } = useAuth();
@@ -16,7 +18,7 @@ export default function ConsumptionRequestList() {
 
   return (
     <div className="min-h-screen bg-background">
-      <PageHeader title="确认消费申请" />
+      <PageHeader title="消费申请" />
 
       <main className="p-4 space-y-3">
         {isLoading ? (
@@ -29,31 +31,39 @@ export default function ConsumptionRequestList() {
           </div>
         ) : (
           requests.map((request) => {
-            const roomDisplay = request.roomNo ? `${request.roomNo} - ${request.roomTypeName}` : (request.roomTypeName || '未知房间');
-            const dateDisplay = request.bookingDate ? format(new Date(request.bookingDate), 'MM/dd EEEE', { locale: zhCN }) : '-';
+            const roomDisplay = request.roomNo ? `${request.roomNo} - ${request.roomName}` : (request.roomName || '未知房间');
+            const dateDisplay = request.createdAt ? format(new Date(request.createdAt), 'MM/dd EEEE', { locale: zhCN }) : '-';
 
             return (
             <div
               key={request.id}
               onClick={() => setSelectedId(request.id?.toString() || '')}
-              className="bg-card rounded-lg border border-border p-4 active:bg-accent transition-colors cursor-pointer animate-fade-in"
+              className="bg-card rounded-lg border border-border p-4 active:bg-accent transition-colors cursor-pointer animate-fade-in space-y-2"
             >
-              <div className="flex items-start justify-between mb-2">
+              <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-semibold text-foreground">
-                    {roomDisplay} {request.customerName}
+                     {request.storeName && <span className="mr-2 text-sm text-muted-foreground">[{request.storeName}]</span>}
+                    {roomDisplay} 
+                    <span className="ml-2">
+                        <MemberNameDisplay id={request.memberId?.toString()} initialName={request.memberName} />
+                    </span>
                   </h3>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    {dateDisplay}
-                  </p>
+                  <div className="text-sm text-muted-foreground mt-0.5 space-y-1">
+                      {request.consumeNo && <p>单号: {request.consumeNo}</p>}
+                      <p>{dateDisplay}</p>
+                  </div>
                 </div>
                 <RequestStatusBadge status={request.status || 'PENDING'} />
               </div>
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>服务业务员: {request.serviceStaffName || '未知'}</span>
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {request.createdAt ? format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm') : ''}
+              
+              <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t border-border/50">
+                <span>
+                    服务业务员: <StaffNameDisplay id={request.applyStaffId?.toString()} />
+                </span>
+                {request.consumeAmount !== undefined && (
+                    <span className="font-medium text-foreground">¥{request.consumeAmount}</span>
+                )}
               </div>
             </div>
           )})
@@ -64,7 +74,7 @@ export default function ConsumptionRequestList() {
         open={!!selectedId}
         onOpenChange={(open) => !open && setSelectedId(null)}
         requestId={selectedId || ''}
-        roomName={requests.find(r => r.id?.toString() === selectedId)?.roomTypeName}
+        roomName={requests.find(r => r.id?.toString() === selectedId)?.roomName}
         roomNo={requests.find(r => r.id?.toString() === selectedId)?.roomNo}
         showActions={false}
       />

@@ -52,80 +52,32 @@ export function ConsumptionDetailDialog({
   const [reason, setReason] = useState("");
   const [realBookingSalesName, setRealBookingSalesName] = useState("");
   const [realBookingSalesStaffNo, setRealBookingSalesStaffNo] = useState("");
-  const [realServiceSalesName, setRealServiceSalesName] = useState("");
-  const [realServiceSalesStaffNo, setRealServiceSalesStaffNo] = useState("");
 
   const displayRoomName = roomName && roomNo 
       ? `${roomNo} - ${roomName}` 
-      : (roomName || '未知房间');
-  
-  // Resolve Service Sales Name
-  let serviceSalesName = realServiceSalesName || request?.serviceSalesName;
-  let serviceSalesStaffNo = realServiceSalesStaffNo || request?.serviceSalesStaffNo;
+      : (roomName || request?.roomName || '未知房间');
 
-  if (request && (!serviceSalesName || serviceSalesName === 'Unknown' || serviceSalesName === request.serviceSalesId?.toString())) {
-      if (user && (user.id === request.serviceSalesId || user.staffNo === request.serviceSalesStaffNo)) {
-          serviceSalesName = user.name;
-          if (!realServiceSalesStaffNo) {
-             serviceSalesStaffNo = user.phone || user.staffNo;
-          }
-      }
-  }
+  // Resolve Service Sales Name
+  // Use applyStaffId for service sales
+  const serviceSalesId = request?.applyStaffId;
 
   // Resolve Booking Sales Name
-  let bookingSalesName = realBookingSalesName || request?.bookingSalesName;
-  const bookingSalesStaffNo = realBookingSalesStaffNo || request?.bookingSalesId?.toString() || "";
-
-  if (request && !bookingSalesName && request.bookingSalesId) {
-      if (user && (user.id === request.bookingSalesId || user.staffNo === request.bookingSalesId?.toString())) {
-          bookingSalesName = user.name;
-      }
-  }
-
-  useEffect(() => {
-    if (request?.applyStaffId) {
-      getStaffDetail(request.applyStaffId)
-        .then((res) => {
-          if (res.code === 200 && res.data) {
-            setRealServiceSalesName(res.data.name || "");
-            setRealServiceSalesStaffNo(res.data.phone || res.data.staffNo);
-          }
-        })
-        .catch((err) => {
-          console.error("Failed to fetch service staff detail", err);
-        });
-    } else {
-        setRealServiceSalesName("");
-        setRealServiceSalesStaffNo("");
-    }
-  }, [request?.applyStaffId]);
+  // Need to fetch reservation to get booking staff ID if not provided in consume response
+  const [bookingSalesId, setBookingSalesId] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     if (request?.reservationId) {
       getReservationDetail(request.reservationId)
         .then(async (res) => {
           if (res.code === 200 && res.data) {
-            const staffId = res.data.staffId;
-            if (staffId) {
-              // Get Staff Detail to get name
-              try {
-                const staffRes = await getStaffDetail(staffId);
-                if (staffRes.code === 200 && staffRes.data) {
-                  setRealBookingSalesName(staffRes.data.name || "");
-                  setRealBookingSalesStaffNo(staffRes.data.phone || staffId.toString());
-                }
-              } catch (err) {
-                 console.error("Failed to fetch staff detail", err);
-              }
-            }
+             setBookingSalesId(res.data.staffId);
           }
         })
         .catch(err => {
           console.error("Failed to fetch reservation detail", err);
         });
     } else {
-        setRealBookingSalesName("");
-        setRealBookingSalesStaffNo("");
+        setBookingSalesId(undefined);
     }
   }, [request?.reservationId]);
 
@@ -211,6 +163,18 @@ export function ConsumptionDetailDialog({
           </div>
 
           <div className="bg-secondary/50 rounded-lg p-4 space-y-3">
+            {request.storeName && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">门店</span>
+                <span className="font-medium">{request.storeName}</span>
+              </div>
+            )}
+            {request.consumeNo && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">单号</span>
+                <span className="font-medium text-xs">{request.consumeNo}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">房号</span>
               <span className="font-medium">{displayRoomName}</span>
@@ -229,9 +193,7 @@ export function ConsumptionDetailDialog({
               <span className="text-muted-foreground">预定业务员</span>
               <span className="font-medium">
                 <StaffNameDisplay 
-                  id={request.reservationId?.toString() || ''} // Wrong ID for staff, fixed below in logic but variable used here is bookingSalesName
-                  initialName={bookingSalesName} 
-                  staffNo={bookingSalesStaffNo}
+                  id={bookingSalesId?.toString() || ''} 
                   showStaffNo
                 />
               </span>
@@ -240,13 +202,29 @@ export function ConsumptionDetailDialog({
               <span className="text-muted-foreground">服务业务员</span>
               <span className="font-medium">
                 <StaffNameDisplay 
-                  id={request.applyStaffId?.toString() || ''} 
-                  initialName={serviceSalesName} 
-                  staffNo={serviceSalesStaffNo}
+                  id={serviceSalesId?.toString() || ''} 
                   showStaffNo
                 />
               </span>
             </div>
+            {request.consumeAmount !== undefined && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">消费金额</span>
+                <span className="font-medium text-primary">¥{request.consumeAmount}</span>
+              </div>
+            )}
+             {request.useBalance !== undefined && request.useBalance > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">使用本金</span>
+                <span className="font-medium">¥{request.useBalance}</span>
+              </div>
+            )}
+             {request.useGiftAmount !== undefined && request.useGiftAmount > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">使用赠送金</span>
+                <span className="font-medium">¥{request.useGiftAmount}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">申请时间</span>
               <span className="font-medium text-sm">{request.createdAt}</span>

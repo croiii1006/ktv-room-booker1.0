@@ -20,7 +20,7 @@ export default function ConsumptionApproval() {
   if (!user || user.role !== 'leader') {
     return (
       <div className="min-h-screen bg-background">
-        <PageHeader title="确认消费申请审核" />
+        <PageHeader title="消费申请审核" />
         <main className="p-4">
           <p className="text-muted-foreground text-sm">仅队长可查看消费确认申请。</p>
         </main>
@@ -30,7 +30,7 @@ export default function ConsumptionApproval() {
 
   return (
     <div className="min-h-screen bg-background">
-      <PageHeader title="确认消费申请审核" />
+      <PageHeader title="消费申请审核" />
 
       <main className="p-4 space-y-3">
         {isLoading ? (
