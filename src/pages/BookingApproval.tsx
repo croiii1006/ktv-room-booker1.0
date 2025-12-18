@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { BookingDetailDialog } from '@/components/BookingDetailDialog';
+import { MemberNameDisplay } from '@/components/MemberNameDisplay';
 import { StaffNameDisplay } from '@/components/StaffNameDisplay';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePendingReservationList } from '@/queries/reservation-queries';
@@ -40,37 +40,72 @@ export default function BookingApproval() {
           </div>
         ) : (
           sortedOrders.map((order) => {
-            const formattedDate = order.reserveDate ? format(new Date(order.reserveDate), 'MM/dd EEEE', {
-              locale: zhCN,
-            }) : '-';
-
-            const roomDisplay = order.roomTypeName ? `${order.roomTypeName} ${order.roomNo}` : (order.roomNo || '未知房间');
-
             return (
               <div
                 key={order.id}
                 onClick={() => setSelectedBookingId(order.id?.toString() || '')}
-                className="bg-card rounded-lg border border-border p-4 active:bg-accent transition-colors cursor-pointer animate-fade-in"
+                className="bg-card rounded-lg border border-border p-4 space-y-3 active:bg-accent transition-colors cursor-pointer animate-fade-in"
               >
-                <div className="flex items-start justify-between mb-2">
+                <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-semibold text-foreground">
-                      {roomDisplay}
+                      {order.storeName && <span className="mr-2 text-sm text-muted-foreground">[{order.storeName}]</span>}
+                      {order.roomName && <span className="mr-1">{order.roomName}</span>}
+                      {order.roomTypeName} {order.roomNo}
                     </h3>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {formattedDate}
-                    </p>
+                    <div className="text-sm text-muted-foreground mt-0.5 space-y-1">
+                      {order.reserveNo && <p>订单号: {order.reserveNo}</p>}
+                      <p>
+                         {order.guestCount ? `${order.guestCount}人` : ''} 
+                         {order.sourceDesc ? ` · ${order.sourceDesc}` : ''}
+                         {' · '}
+                         <MemberNameDisplay id={order.memberId?.toString()} initialName={order.memberName} />
+                      </p>
+                      <p>
+                        申请人: <StaffNameDisplay id={order.staffId?.toString()} initialName={order.applyStaffName} showStaffNo />
+                      </p>
+                    </div>
                   </div>
                   <StatusBadge status={order.status || 'PENDING'} />
                 </div>
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>
-                    申请人: <StaffNameDisplay id={order.staffId?.toString()} initialName={order.applyStaffName} showStaffNo />
-                  </span>
-                  {/* Deposit is not currently available in Booking model */}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
+
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <div className="flex justify-between">
+                    <span>到店时间</span>
+                    <span>
+                      {(() => {
+                        if (order.arrivalTime) {
+                          return format(new Date(order.arrivalTime), 'MM-dd HH:mm');
+                        }
+                        if (order.reserveDate) {
+                          try {
+                            const date = new Date(order.reserveDate);
+                             if (order.startMin !== undefined) {
+                               date.setMinutes(date.getMinutes() + order.startMin);
+                             }
+                             return format(date, 'MM-dd HH:mm');
+                          } catch (e) {
+                            return '-';
+                          }
+                        }
+                        return '-';
+                      })()}
+                    </span>
+                  </div>
+                  {order.deposit > 0 && (
+                     <div className="flex justify-between">
+                      <span>定金</span>
+                      <span>¥{order.deposit}</span>
+                    </div>
+                  )}
+                   <div className="flex justify-between">
+                    <span>备注</span>
+                    <span>{order.remark || '无'}</span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-border/50 mt-1">
+                     <span className="text-xs">申请时间</span>
+                     <span className="text-xs">{order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}</span>
+                  </div>
                 </div>
               </div>
             );
