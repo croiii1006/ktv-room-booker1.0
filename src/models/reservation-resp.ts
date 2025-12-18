@@ -38,11 +38,29 @@ export interface ReservationResp {
      */
     storeId?: number;
     /**
+     * 门店名称
+     * @type {string}
+     * @memberof ReservationResp
+     */
+    storeName?: string;
+    /**
      * 房间ID
      * @type {number}
      * @memberof ReservationResp
      */
     roomId?: number;
+    /**
+     * 房间名称
+     * @type {string}
+     * @memberof ReservationResp
+     */
+    roomName?: string;
+    /**
+     * 房号
+     * @type {string}
+     * @memberof ReservationResp
+     */
+    roomNo?: string;
     /**
      * 会员ID
      * @type {number}

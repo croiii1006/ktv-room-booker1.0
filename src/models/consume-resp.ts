@@ -50,11 +50,29 @@ export interface ConsumeResp {
      */
     storeId?: number;
     /**
+     * 门店名称
+     * @type {string}
+     * @memberof ConsumeResp
+     */
+    storeName?: string;
+    /**
      * 房间ID
      * @type {number}
      * @memberof ConsumeResp
      */
     roomId?: number;
+    /**
+     * 房间名称
+     * @type {string}
+     * @memberof ConsumeResp
+     */
+    roomName?: string;
+    /**
+     * 房号
+     * @type {string}
+     * @memberof ConsumeResp
+     */
+    roomNo?: string;
     /**
      * 预定ID
      * @type {number}

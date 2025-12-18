@@ -56,6 +56,12 @@ export interface RechargeResp {
      */
     storeId?: number;
     /**
+     * 门店名称
+     * @type {string}
+     * @memberof RechargeResp
+     */
+    storeName?: string;
+    /**
      * 申请人(业务员)ID
      * @type {number}
      * @memberof RechargeResp

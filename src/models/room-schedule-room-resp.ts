@@ -33,6 +33,12 @@ export interface RoomScheduleRoomResp {
      */
     storeId?: number;
     /**
+     * 
+     * @type {string}
+     * @memberof RoomScheduleRoomResp
+     */
+    storeName?: string;
+    /**
      * 房名
      * @type {string}
      * @memberof RoomScheduleRoomResp
