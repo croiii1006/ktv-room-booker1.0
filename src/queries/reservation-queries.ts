@@ -46,7 +46,9 @@ export const useCreateReservation = () => {
     mutationFn: (data: ReservationCreateReq) => h5Api.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: reservationKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: reservationKeys.pendingLists() }); // Might affect pending list if auto-approved or shown there
+      queryClient.invalidateQueries({ queryKey: reservationKeys.pendingLists() }); 
+      // Invalidate schedule query to update room matrix immediately
+      queryClient.invalidateQueries({ queryKey: ['schedule'] });
     },
   });
 };

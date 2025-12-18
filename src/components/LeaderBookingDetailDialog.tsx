@@ -21,6 +21,8 @@ interface LeaderBookingDetailDialogProps {
   onClose: () => void;
   bookingId: string;
   roomName?: string;
+  roomNo?: string;
+  roomType?: string;
 }
 
 export function LeaderBookingDetailDialog({
@@ -28,6 +30,8 @@ export function LeaderBookingDetailDialog({
   onClose,
   bookingId,
   roomName,
+  roomNo,
+  roomType,
 }: LeaderBookingDetailDialogProps) {
   const { user } = useAuth();
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -64,6 +68,16 @@ export function LeaderBookingDetailDialog({
             <div className="bg-secondary/50 rounded-lg p-4 space-y-3">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">房号</span>
+                <span className="font-medium">{roomNo || '-'}</span>
+              </div>
+              {roomType && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">房型</span>
+                  <span className="font-medium">{roomType}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">房名</span>
                 <span className="font-medium">{roomName || '未知房间'}</span>
               </div>
               <div className="flex justify-between">
@@ -149,9 +163,19 @@ export function LeaderBookingDetailDialog({
 
           <div className="bg-secondary/50 rounded-lg p-4 space-y-3">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">房号</span>
-              <span className="font-medium">{roomName || '未知房间'}</span>
-            </div>
+                <span className="text-muted-foreground">房号</span>
+                <span className="font-medium">{roomNo || '-'}</span>
+              </div>
+              {roomType && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">房型</span>
+                  <span className="font-medium">{roomType}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">房名</span>
+                <span className="font-medium">{roomName || '未知房间'}</span>
+              </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">预定日期</span>
               <span className="font-medium">{formattedDate}</span>

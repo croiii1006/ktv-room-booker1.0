@@ -26,10 +26,19 @@ export default function RoomMatrix() {
   const { user } = useAuth();
   
   const { data: storeData } = useStoreList();
-  const stores = storeData?.data?.data || [];
+  const allStores = storeData?.data?.data || [];
+
+  const stores = React.useMemo(() => {
+    if (user?.storeId) {
+      // Use loose equality to handle potential string/number mismatches
+      return allStores.filter(s => s.id == user.storeId);
+    }
+    return allStores;
+  }, [allStores, user?.storeId]);
 
   const [selectedCell, setSelectedCell] = useState<{ roomId: string; date: string } | null>(null);
   const [viewBookingId, setViewBookingId] = useState<string | null>(null);
+  const [viewBookingRoomId, setViewBookingRoomId] = useState<string | null>(null);
   const [selectedStoreId, setSelectedStoreId] = useState('');
   const [weekOffset, setWeekOffset] = useState(0);
 
@@ -44,26 +53,22 @@ export default function RoomMatrix() {
 
   // Set default store based on user profile
   React.useEffect(() => {
-    if (user?.storeId && stores.length > 0) {
-       // Only set if selectedStoreId is still the default fallback 'store1' which might not be valid 
-       // or if we want to enforce user's store on load.
-       const currentStore = stores.find(s => s.id === selectedStoreId);
-       if (!currentStore && !selectedStoreId) {
-           setSelectedStoreId(user.storeId.toString());
-       } else if (selectedStoreId === 'store1' && user.storeId.toString() !== 'store1') {
-           // Fix for potential legacy default
-           setSelectedStoreId(user.storeId.toString());
-       }
-    } else if (stores.length > 0 && (!selectedStoreId || selectedStoreId === 'store1')) {
-        // Fallback to first available store if no user store
-        setSelectedStoreId(stores[0].id?.toString());
+    if (stores.length > 0) {
+      // Check if current selectedStoreId is valid
+      const currentStore = stores.find(s => s.id?.toString() === selectedStoreId);
+      
+      if (!currentStore) {
+        // If invalid or not set, select the first available store
+        setSelectedStoreId(stores[0].id?.toString() || '');
+      }
     }
-  }, [user, stores, selectedStoreId]);
+  }, [stores, selectedStoreId]);
 
   const { data: scheduleData, isLoading } = useRoomSchedule(
     format(startDate, 'yyyy-MM-dd'), 
     format(endDate, 'yyyy-MM-dd'), 
-    selectedStoreId ? parseInt(selectedStoreId) : undefined
+    selectedStoreId ? parseInt(selectedStoreId) : undefined,
+    { enabled: !!selectedStoreId }
   );
 
   const schedule = scheduleData?.data?.data || {}; 
@@ -78,15 +83,17 @@ export default function RoomMatrix() {
 
   const getBookingByRoomAndDate = (roomId: string, date: string) => {
       const room = rooms.find(r => r.id?.toString() === roomId);
-      if (!room || !room.schedules) return null;
+      if (!room || !room.bookings) return null;
       // schedule date format: yyyy-MM-dd
-      return room.schedules.find(s => s.date === date);
+      // bookings is a Map/Object where keys are dates
+      return room.bookings[date];
   };
 
   const handleCellClick = (roomId: string, date: string) => {
     const booking = getBookingByRoomAndDate(roomId, date);
     if (booking && booking.status !== 'FREE') { // Assuming FREE is default or null means free
       setViewBookingId(booking.bookingId?.toString() || '');
+      setViewBookingRoomId(roomId);
     } else if (!isLeader) {
       // Only salesperson can create bookings
       setSelectedCell({ roomId, date });
@@ -95,6 +102,7 @@ export default function RoomMatrix() {
       // For now, if free and leader, maybe show nothing or room detail?
       // Keeping existing logic:
       setViewBookingId(`free_${roomId}_${date}`);
+      setViewBookingRoomId(roomId);
     }
   };
 
@@ -138,6 +146,24 @@ export default function RoomMatrix() {
       default:
         return '';
     }
+  };
+
+  const resolveRoomName = (roomId: string | null) => {
+    if (!roomId) return '';
+    const room = rooms.find(r => r.id?.toString() === roomId);
+    return room?.roomName || room?.roomNo || '';
+  };
+
+  const getRoomNo = (roomId: string | null) => {
+    if (!roomId) return '';
+    const room = rooms.find(r => r.id?.toString() === roomId);
+    return room?.roomNo || '';
+  };
+
+  const getRoomType = (roomId: string | null) => {
+    if (!roomId) return '';
+    const room = rooms.find(r => r.id?.toString() === roomId);
+    return room?.roomType || '';
   };
 
   return (
@@ -231,6 +257,7 @@ export default function RoomMatrix() {
               <tr key={room.id}>
                 <td className="p-2 text-sm font-medium text-foreground bg-card border border-border sticky left-0 z-10">
                   <div>{room.roomNo}</div>
+                  <div className="text-xs text-muted-foreground">{room.roomType}</div>
                   <div className="text-xs text-muted-foreground">¥{room.price}</div>
                 </td>
                 {dates.map((date) => {
@@ -267,7 +294,9 @@ export default function RoomMatrix() {
           open={!!selectedCell}
           onClose={() => setSelectedCell(null)}
           roomId={selectedCell?.roomId || ''}
-          roomName={selectedCell ? rooms.find(r => r.id?.toString() === selectedCell.roomId)?.roomName || rooms.find(r => r.id?.toString() === selectedCell.roomId)?.roomNo || '' : ''}
+          roomName={resolveRoomName(selectedCell?.roomId || null)}
+          roomNo={getRoomNo(selectedCell?.roomId || null)}
+          roomType={getRoomType(selectedCell?.roomId || null)}
           roomPrice={selectedCell ? rooms.find(r => r.id?.toString() === selectedCell.roomId)?.price || 0 : 0}
           date={selectedCell?.date || ''}
           preselectedCustomerId={preselectedCustomerId}
@@ -278,17 +307,28 @@ export default function RoomMatrix() {
       {isLeader ? (
         <LeaderBookingDetailDialog
           open={!!viewBookingId}
-          onClose={() => setViewBookingId(null)}
+          onClose={() => {
+            setViewBookingId(null);
+            setViewBookingRoomId(null);
+          }}
           bookingId={viewBookingId || ''}
-          roomName={getRoomName(viewBookingRoomId)}
+          roomName={resolveRoomName(viewBookingRoomId)}
+          roomNo={getRoomNo(viewBookingRoomId)}
+          roomType={getRoomType(viewBookingRoomId)}
         />
       ) : (
         <BookingDetailDialog
           open={!!viewBookingId}
-          onOpenChange={(open) => !open && setViewBookingId(null)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setViewBookingId(null);
+              setViewBookingRoomId(null);
+            }
+          }}
           bookingId={viewBookingId || ''}
-          roomName={getRoomName(viewBookingRoomId)}
+          roomName={resolveRoomName(viewBookingRoomId)}
           roomNo={getRoomNo(viewBookingRoomId)}
+          roomType={getRoomType(viewBookingRoomId)}
         />
       )}
     </div>

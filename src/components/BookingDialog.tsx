@@ -25,6 +25,8 @@ interface BookingDialogProps {
   onClose: () => void;
   roomId: string;
   roomName: string;
+  roomNo: string;
+  roomType: string;
   roomPrice: number;
   date: string;
   preselectedCustomerId?: string;
@@ -35,6 +37,8 @@ export function BookingDialog({
   onClose,
   roomId,
   roomName,
+  roomNo,
+  roomType,
   roomPrice,
   date,
   preselectedCustomerId,
@@ -43,8 +47,9 @@ export function BookingDialog({
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
 
   // Fetch customers directly
-  const { data: memberData } = useMemberList(1, 100);
-  const customers = memberData?.data?.list || [];
+  const { data: memberData } = useMemberList(1, 100, undefined, { enabled: open });
+  // API response structure: response.data (body) -> data (payload) -> list
+  const customers = memberData?.data?.data?.list || [];
   
   const createReservationMutation = useCreateReservation();
 
@@ -80,6 +85,13 @@ export function BookingDialog({
       });
       
       toast.success('申请已提交，等待队长审核');
+      
+      // Invalidate queries to refresh the matrix
+      // Since we don't have direct access to invalidate specific schedule query from here without prop drilling queryClient,
+      // we can rely on React Query's global invalidation or just assume the parent will refetch if we signal it.
+      // But better yet, use queryClient.
+      // queryClient.invalidateQueries({ queryKey: ['schedule'] }); is handled in the mutation onSuccess in reservation-queries usually.
+      
       onClose();
     } catch (error) {
       toast.error('提交失败');
@@ -102,6 +114,16 @@ export function BookingDialog({
           <div className="bg-secondary/50 rounded-lg p-4 space-y-2">
             <div className="flex justify-between">
               <span className="text-muted-foreground">房号</span>
+              <span className="font-medium">{roomNo}</span>
+            </div>
+            {roomType && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">房型</span>
+                <span className="font-medium">{roomType}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">房名</span>
               <span className="font-medium">{roomName}</span>
             </div>
             <div className="flex justify-between">

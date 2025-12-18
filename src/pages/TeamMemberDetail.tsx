@@ -63,7 +63,7 @@ export default function TeamMemberDetail() {
 
   // Get room list for mapping room names
   const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const { data: scheduleData } = useRoomSchedule(todayStr, todayStr);
+  const { data: scheduleData } = useRoomSchedule(todayStr, todayStr, user?.storeId);
   const rooms = scheduleData?.data?.data?.rooms || [];
   const getRoomInfo = (roomId: number) => {
     const room = rooms.find((r: any) => r.id === roomId);

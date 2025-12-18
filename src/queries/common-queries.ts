@@ -25,11 +25,11 @@ export const useCardTypeList = () => {
 };
 
 // 排房情况
-export const useRoomSchedule = (startDate: string, endDate: string, storeId?: number) => {
+export const useRoomSchedule = (startDate: string, endDate: string, storeId?: number, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: commonKeys.schedule(startDate, endDate, storeId),
     queryFn: () => h5Api.schedule(startDate, endDate, storeId),
-    enabled: !!startDate && !!endDate,
+    enabled: (options?.enabled !== false) && !!startDate && !!endDate && !!storeId,
   });
 };
 
