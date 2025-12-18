@@ -44,7 +44,7 @@ export default function ConsumptionApproval() {
         ) : (
           pendingRequests.map((request) => {
             const roomDisplay = request.roomTypeName ? `${request.roomTypeName} ${request.roomNo}` : (request.roomNo || '未知房间');
-            const dateDisplay = request.createdAt ? format(new Date(request.createdAt), 'MM/dd EEEE', { locale: zhCN }) : '-';
+            const dateDisplay = request.reserveDate ? format(new Date(request.reserveDate), 'MM/dd EEEE', { locale: zhCN }) : '-';
             
             return (
             <div

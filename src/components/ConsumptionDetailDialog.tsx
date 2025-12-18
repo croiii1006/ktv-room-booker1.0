@@ -115,7 +115,7 @@ export function ConsumptionDetailDialog({
     );
   }
 
-  const formattedDate = request.createdAt ? format(new Date(request.createdAt), "yyyy年MM月dd日 EEEE", {
+  const formattedDate = request.reserveDate ? format(new Date(request.reserveDate), "yyyy年MM月dd日 EEEE", {
     locale: zhCN,
   }) : '';
 

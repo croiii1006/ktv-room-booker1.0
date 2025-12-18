@@ -32,7 +32,7 @@ export default function ConsumptionRequestList() {
         ) : (
           requests.map((request) => {
             const roomDisplay = request.roomNo ? `${request.roomNo} - ${request.roomName}` : (request.roomName || '未知房间');
-            const dateDisplay = request.createdAt ? format(new Date(request.createdAt), 'MM/dd EEEE', { locale: zhCN }) : '-';
+            const dateDisplay = request.reserveDate ? format(new Date(request.reserveDate), 'MM/dd EEEE', { locale: zhCN }) : '-';
 
             return (
             <div
