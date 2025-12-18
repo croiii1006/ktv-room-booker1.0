@@ -24,7 +24,7 @@ export interface StaffResp {
      * @type {number}
      * @memberof StaffResp
      */
-    id?: number;
+    id?: string;
     /**
      * 用户名
      * @type {string}
@@ -60,13 +60,13 @@ export interface StaffResp {
      * @type {number}
      * @memberof StaffResp
      */
-    storeId?: number;
+    storeId?: string;
     /**
      * 队长ID
      * @type {number}
      * @memberof StaffResp
      */
-    leaderId?: number;
+    leaderId?: string;
     /**
      * 状态
      * @type {number}

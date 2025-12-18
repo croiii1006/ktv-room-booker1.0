@@ -24,13 +24,13 @@ export interface RechargeReviewReq {
      * @type {number}
      * @memberof RechargeReviewReq
      */
-    id: number;
+    id: string;
     /**
      * 审核人(队长)ID
      * @type {number}
      * @memberof RechargeReviewReq
      */
-    reviewerId: number;
+    reviewerId: string;
     /**
      * 拒绝原因
      * @type {string}

@@ -38,7 +38,7 @@ export const H5LookupApiAxiosParamCreator = function (configuration?: Configurat
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        member: async (id: number, options: any = {}): Promise<RequestArgs> => {
+        member: async (id: string, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'id' is not null or undefined
             if (id === null || id === undefined) {
                 throw new RequiredError('id','Required parameter id was null or undefined when calling member.');
@@ -74,7 +74,7 @@ export const H5LookupApiAxiosParamCreator = function (configuration?: Configurat
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        staff: async (id: number, options: any = {}): Promise<RequestArgs> => {
+        staff: async (id: string, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'id' is not null or undefined
             if (id === null || id === undefined) {
                 throw new RequiredError('id','Required parameter id was null or undefined when calling staff.');
@@ -119,7 +119,7 @@ export const H5LookupApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async member(id: number, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultH5MemberResp>> {
+        async member(id: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultH5MemberResp>> {
             const localVarAxiosArgs = await H5LookupApiAxiosParamCreator(configuration).member(id, options);
             return (axios: AxiosInstance = globalAxios, basePath: string = BASE_PATH) => {
                 const axiosRequestArgs = {...localVarAxiosArgs.options, url: basePath + localVarAxiosArgs.url};
@@ -133,7 +133,7 @@ export const H5LookupApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async staff(id: number, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultStaffResp>> {
+        async staff(id: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultStaffResp>> {
             const localVarAxiosArgs = await H5LookupApiAxiosParamCreator(configuration).staff(id, options);
             return (axios: AxiosInstance = globalAxios, basePath: string = BASE_PATH) => {
                 const axiosRequestArgs = {...localVarAxiosArgs.options, url: basePath + localVarAxiosArgs.url};
@@ -156,7 +156,7 @@ export const H5LookupApiFactory = function (configuration?: Configuration, baseP
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        member(id: number, options?: any): AxiosPromise<ResultH5MemberResp> {
+        member(id: string, options?: any): AxiosPromise<ResultH5MemberResp> {
             return H5LookupApiFp(configuration).member(id, options).then((request) => request(axios, basePath));
         },
         /**
@@ -166,7 +166,7 @@ export const H5LookupApiFactory = function (configuration?: Configuration, baseP
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        staff(id: number, options?: any): AxiosPromise<ResultStaffResp> {
+        staff(id: string, options?: any): AxiosPromise<ResultStaffResp> {
             return H5LookupApiFp(configuration).staff(id, options).then((request) => request(axios, basePath));
         },
     };
@@ -187,7 +187,7 @@ export class H5LookupApi extends BaseAPI {
      * @throws {RequiredError}
      * @memberof H5LookupApi
      */
-    public member(id: number, options?: any) {
+    public member(id: string, options?: any) {
         return H5LookupApiFp(this.configuration).member(id, options).then((request) => request(this.axios, this.basePath));
     }
 
@@ -199,7 +199,7 @@ export class H5LookupApi extends BaseAPI {
      * @throws {RequiredError}
      * @memberof H5LookupApi
      */
-    public staff(id: number, options?: any) {
+    public staff(id: string, options?: any) {
         return H5LookupApiFp(this.configuration).staff(id, options).then((request) => request(this.axios, this.basePath));
     }
 

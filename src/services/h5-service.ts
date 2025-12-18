@@ -38,7 +38,7 @@ export const getTeamMembers = async (page?: number, size?: number): Promise<Page
 };
 
 // 业务员详情
-export const getStaffDetail = async (id: number): Promise<ResultH5TeamStaffResp> => {
+export const getStaffDetail = async (id: string): Promise<ResultH5TeamStaffResp> => {
   const response = await apiClient.get<ResultH5TeamStaffResp>(`/api/h5/team/staffs/${id}`);
   return response.data;
 };
@@ -74,7 +74,7 @@ export const getMyMembers = async (page?: number, size?: number): Promise<PageRe
 };
 
 // 会员详情
-export const getMemberDetail = async (id: number): Promise<ResultH5MemberResp> => {
+export const getMemberDetail = async (id: string): Promise<ResultH5MemberResp> => {
   const response = await apiClient.get<ResultH5MemberResp>(`/api/h5/members/${id}`);
   return response.data;
 };
@@ -106,7 +106,7 @@ export const cancelReservation = async (request: ReservationCancelReq): Promise<
 };
 
 // 预定详情
-export const getReservationDetail = async (id: number): Promise<ReservationResp> => {
+export const getReservationDetail = async (id: string): Promise<ReservationResp> => {
   const response = await apiClient.get<ReservationResp>(`/api/h5/reservations/${id}`);
   return response.data;
 };
@@ -133,7 +133,7 @@ export const getMyReservations = async (page?: number, size?: number, status?: s
 };
 
 // 业务员预定列表（队长查看）
-export const getTeamMemberReservations = async (staffId: number, page?: number, size?: number, status?: string): Promise<PageResultReservationResp> => {
+export const getTeamMemberReservations = async (staffId: string, page?: number, size?: number, status?: string): Promise<PageResultReservationResp> => {
   const params = new URLSearchParams();
   if (page) params.append('page', page.toString());
   if (size) params.append('size', size.toString());
@@ -164,7 +164,7 @@ export const rejectRecharge = async (request: RechargeReviewReq): Promise<Rechar
 };
 
 // 充值申请详情
-export const getRechargeDetail = async (id: number): Promise<RechargeResp> => {
+export const getRechargeDetail = async (id: string): Promise<RechargeResp> => {
   const response = await apiClient.get<RechargeResp>(`/api/h5/recharge-applies/${id}`);
   return response.data;
 };
@@ -191,7 +191,7 @@ export const getMyRecharges = async (page?: number, size?: number, status?: stri
 };
 
 // 业务员充值申请列表（队长查看）
-export const getTeamMemberRecharges = async (staffId: number, page?: number, size?: number, status?: string): Promise<PageResultRechargeResp> => {
+export const getTeamMemberRecharges = async (staffId: string, page?: number, size?: number, status?: string): Promise<PageResultRechargeResp> => {
   const params = new URLSearchParams();
   if (page) params.append('page', page.toString());
   if (size) params.append('size', size.toString());
@@ -222,7 +222,7 @@ export const rejectConsume = async (request: ConsumeReviewReq): Promise<ConsumeR
 };
 
 // 消费详情
-export const getConsumeDetail = async (id: number): Promise<ConsumeResp> => {
+export const getConsumeDetail = async (id: string): Promise<ConsumeResp> => {
   const response = await apiClient.get<ConsumeResp>(`/api/h5/consume-applies/${id}`);
   return response.data;
 };
@@ -249,7 +249,7 @@ export const getMyConsumes = async (page?: number, size?: number, status?: strin
 };
 
 // 业务员消费确认列表（队长查看）
-export const getTeamMemberConsumes = async (staffId: number, page?: number, size?: number, status?: string): Promise<PageResultConsumeResp> => {
+export const getTeamMemberConsumes = async (staffId: string, page?: number, size?: number, status?: string): Promise<PageResultConsumeResp> => {
   const params = new URLSearchParams();
   if (page) params.append('page', page.toString());
   if (size) params.append('size', size.toString());
@@ -270,7 +270,7 @@ export const getStoreList = async (): Promise<ResultListStoreSimpleResp> => {
 // ==================== 排房情况 ====================
 
 // 排房情况
-export const getRoomSchedule = async (params: { storeId?: number; startDate: string; endDate: string }): Promise<ResultRoomScheduleResp> => {
+export const getRoomSchedule = async (params: { storeId?: string; startDate: string; endDate: string }): Promise<ResultRoomScheduleResp> => {
   const queryParams = new URLSearchParams();
   if (params.storeId) queryParams.append('storeId', params.storeId.toString());
   queryParams.append('startDate', params.startDate);

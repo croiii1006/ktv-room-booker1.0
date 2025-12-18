@@ -9,9 +9,9 @@ export const consumeKeys = {
   pendingLists: () => [...consumeKeys.all, 'pending'] as const,
   pendingList: (page?: number, size?: number) => [...consumeKeys.pendingLists(), { page, size }] as const,
   details: () => [...consumeKeys.all, 'detail'] as const,
-  detail: (id: number) => [...consumeKeys.details(), id] as const,
+  detail: (id: string) => [...consumeKeys.details(), id] as const,
   staffLists: () => [...consumeKeys.all, 'staff'] as const,
-  staffList: (staffId: number, page?: number, size?: number, status?: string) => [...consumeKeys.staffLists(), staffId, { page, size, status }] as const,
+  staffList: (staffId: string, page?: number, size?: number, status?: string) => [...consumeKeys.staffLists(), staffId, { page, size, status }] as const,
 };
 
 // 我的消费申请列表
@@ -31,7 +31,7 @@ export const usePendingConsumeList = (page?: number, size?: number) => {
 };
 
 // 消费详情
-export const useConsumeDetail = (id: number) => {
+export const useConsumeDetail = (id: string) => {
   return useQuery({
     queryKey: consumeKeys.detail(id),
     queryFn: () => h5Api.detail3(id),

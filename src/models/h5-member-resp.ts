@@ -24,7 +24,7 @@ export interface H5MemberResp {
      * @type {number}
      * @memberof H5MemberResp
      */
-    id?: number;
+    id?: string;
     /**
      * 会员姓名
      * @type {string}
@@ -48,7 +48,7 @@ export interface H5MemberResp {
      * @type {number}
      * @memberof H5MemberResp
      */
-    cardTypeId?: number;
+    cardTypeId?: string;
     /**
      * 卡类型名称
      * @type {string}
@@ -78,7 +78,7 @@ export interface H5MemberResp {
      * @type {number}
      * @memberof H5MemberResp
      */
-    storeId?: number;
+    storeId?: string;
     /**
      * 绑定门店名称
      * @type {string}
@@ -90,7 +90,7 @@ export interface H5MemberResp {
      * @type {number}
      * @memberof H5MemberResp
      */
-    staffId?: number;
+    staffId?: string;
     /**
      * 负责业务员姓名
      * @type {string}

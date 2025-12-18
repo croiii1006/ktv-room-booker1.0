@@ -9,9 +9,9 @@ export const reservationKeys = {
   pendingLists: () => [...reservationKeys.all, 'pending'] as const,
   pendingList: (page?: number, size?: number) => [...reservationKeys.pendingLists(), { page, size }] as const,
   details: () => [...reservationKeys.all, 'detail'] as const,
-  detail: (id: number) => [...reservationKeys.details(), id] as const,
+  detail: (id: string) => [...reservationKeys.details(), id] as const,
   staffLists: () => [...reservationKeys.all, 'staff'] as const,
-  staffList: (staffId: number, page?: number, size?: number, status?: string) => [...reservationKeys.staffLists(), staffId, { page, size, status }] as const,
+  staffList: (staffId: string, page?: number, size?: number, status?: string) => [...reservationKeys.staffLists(), staffId, { page, size, status }] as const,
 };
 
 // 我的预定列表
@@ -31,7 +31,7 @@ export const usePendingReservationList = (page?: number, size?: number) => {
 };
 
 // 预定详情
-export const useReservationDetail = (id: number) => {
+export const useReservationDetail = (id: string) => {
   return useQuery({
     queryKey: reservationKeys.detail(id),
     queryFn: () => h5Api.detail(id),

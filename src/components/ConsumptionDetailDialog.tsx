@@ -36,7 +36,7 @@ export function ConsumptionDetailDialog({
   showActions,
 }: ConsumptionDetailDialogProps) {
   const { user } = useAuth();
-  const { data: res } = useConsumeDetail(requestId ? parseInt(requestId) : 0);
+  const { data: res } = useConsumeDetail(requestId || '');
   const request = res?.data?.data;
 
   const approveMutation = useApproveConsume();
@@ -63,7 +63,7 @@ export function ConsumptionDetailDialog({
 
   // Resolve Booking Sales Name
   // Need to fetch reservation to get booking staff ID if not provided in consume response
-  const [bookingSalesId, setBookingSalesId] = useState<number | undefined>(undefined);
+  const [bookingSalesId, setBookingSalesId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (request?.reservationId) {
@@ -123,7 +123,7 @@ export function ConsumptionDetailDialog({
     console.log("[handleApprove] requestId =", requestId);
 
     try {
-        await approveMutation.mutateAsync({ id: parseInt(requestId), reviewerId: user?.id || 0 });
+        await approveMutation.mutateAsync({ id: requestId, reviewerId: user?.id || '0' });
         toast.success("消费确认申请已通过");
         onClose();
     } catch (e) {
@@ -137,7 +137,7 @@ export function ConsumptionDetailDialog({
       return;
     }
     try {
-        await rejectMutation.mutateAsync({ id: parseInt(requestId), reviewerId: user?.id || 0, reason: reason.trim() });
+        await rejectMutation.mutateAsync({ id: requestId, reviewerId: user?.id || '0', reason: reason.trim() });
         toast.success("消费确认申请已驳回");
         setShowRejectForm(false);
         setReason("");

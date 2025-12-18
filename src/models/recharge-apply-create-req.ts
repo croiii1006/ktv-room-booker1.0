@@ -24,19 +24,19 @@ export interface RechargeApplyCreateReq {
      * @type {number}
      * @memberof RechargeApplyCreateReq
      */
-    memberId: number;
+    memberId: string;
     /**
      * 门店ID
      * @type {number}
      * @memberof RechargeApplyCreateReq
      */
-    storeId: number;
+    storeId: string;
     /**
      * 申请人(业务员)ID
      * @type {number}
      * @memberof RechargeApplyCreateReq
      */
-    staffId: number;
+    staffId: string;
     /**
      * 充值金额(本金)
      * @type {number}

@@ -24,37 +24,37 @@ export interface ConsumeApplyCreateReq {
      * @type {number}
      * @memberof ConsumeApplyCreateReq
      */
-    memberId: number;
+    memberId: string;
     /**
      * 门店ID
      * @type {number}
      * @memberof ConsumeApplyCreateReq
      */
-    storeId: number;
+    storeId: string;
     /**
      * 房间ID
      * @type {number}
      * @memberof ConsumeApplyCreateReq
      */
-    roomId?: number;
+    roomId?: string;
     /**
      * 预定ID
      * @type {number}
      * @memberof ConsumeApplyCreateReq
      */
-    reservationId: number;
+    reservationId: string;
     /**
      * 申请人(接待业务员)ID
      * @type {number}
      * @memberof ConsumeApplyCreateReq
      */
-    applyStaffId: number;
+    applyStaffId: string;
     /**
      * 接待业务员ID（不同于申请人时填写）
      * @type {number}
      * @memberof ConsumeApplyCreateReq
      */
-    receptionStaffId?: number;
+    receptionStaffId?: string;
     /**
      * 消费金额
      * @type {number}

@@ -24,13 +24,13 @@ export interface ReservationReviewReq {
      * @type {number}
      * @memberof ReservationReviewReq
      */
-    id: number;
+    id: string;
     /**
      * 审核人(队长)ID
      * @type {number}
      * @memberof ReservationReviewReq
      */
-    reviewerId: number;
+    reviewerId: string;
     /**
      * 拒绝原因
      * @type {string}

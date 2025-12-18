@@ -24,7 +24,7 @@ export interface ConsumeResp {
      * @type {number}
      * @memberof ConsumeResp
      */
-    id?: number;
+    id?: string;
     /**
      * 消费单号
      * @type {string}
@@ -36,7 +36,7 @@ export interface ConsumeResp {
      * @type {number}
      * @memberof ConsumeResp
      */
-    memberId?: number;
+    memberId?: string;
     /**
      * 会员姓名
      * @type {string}
@@ -48,7 +48,7 @@ export interface ConsumeResp {
      * @type {number}
      * @memberof ConsumeResp
      */
-    storeId?: number;
+    storeId?: string;
     /**
      * 门店名称
      * @type {string}
@@ -60,7 +60,7 @@ export interface ConsumeResp {
      * @type {number}
      * @memberof ConsumeResp
      */
-    roomId?: number;
+    roomId?: string;
     /**
      * 房间名称
      * @type {string}
@@ -78,7 +78,7 @@ export interface ConsumeResp {
      * @type {number}
      * @memberof ConsumeResp
      */
-    reservationId?: number;
+    reservationId?: string;
     /**
      * 预定日期
      * @type {string}
@@ -90,13 +90,13 @@ export interface ConsumeResp {
      * @type {number}
      * @memberof ConsumeResp
      */
-    applyStaffId?: number;
+    applyStaffId?: string;
     /**
      * 接待业务员ID
      * @type {number}
      * @memberof ConsumeResp
      */
-    receptionStaffId?: number;
+    receptionStaffId?: string;
     /**
      * 消费金额
      * @type {number}
@@ -126,7 +126,7 @@ export interface ConsumeResp {
      * @type {number}
      * @memberof ConsumeResp
      */
-    reviewerId?: number;
+    reviewerId?: string;
     /**
      * 审核时间
      * @type {string}

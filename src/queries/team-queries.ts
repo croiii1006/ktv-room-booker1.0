@@ -10,7 +10,7 @@ export const teamKeys = {
   lists: () => [...teamKeys.all, 'list'] as const,
   list: (page?: number, size?: number) => [...teamKeys.lists(), { page, size }] as const,
   details: () => [...teamKeys.all, 'detail'] as const,
-  detail: (id: number) => [...teamKeys.details(), id] as const,
+  detail: (id: string) => [...teamKeys.details(), id] as const,
   me: () => ['staff', 'me'] as const,
 };
 
@@ -23,7 +23,7 @@ export const useTeamList = (page?: number, size?: number) => {
 };
 
 // 团队业务员详情（队长权限）
-export const useTeamMemberDetail = (id: number) => {
+export const useTeamMemberDetail = (id: string) => {
   return useQuery({
     queryKey: teamKeys.detail(id),
     queryFn: () => h5Api.staffDetail(id),
@@ -43,7 +43,7 @@ export const useCreateTeamMember = () => {
 };
 
 // 业务员预定列表（队长查看）
-export const useTeamMemberReservations = (staffId: number, page?: number, size?: number, status?: string) => {
+export const useTeamMemberReservations = (staffId: string, page?: number, size?: number, status?: string) => {
   return useQuery({
     queryKey: reservationKeys.staffList(staffId, page, size, status),
     queryFn: () => h5Api.staffReservations(staffId, page, size, status),
@@ -52,7 +52,7 @@ export const useTeamMemberReservations = (staffId: number, page?: number, size?:
 };
 
 // 业务员充值申请列表（队长查看）
-export const useTeamMemberRecharges = (staffId: number, page?: number, size?: number, status?: string) => {
+export const useTeamMemberRecharges = (staffId: string, page?: number, size?: number, status?: string) => {
   return useQuery({
     queryKey: rechargeKeys.staffList(staffId, page, size, status),
     queryFn: () => h5Api.staffRechargeApplies(staffId, page, size, status),
@@ -61,7 +61,7 @@ export const useTeamMemberRecharges = (staffId: number, page?: number, size?: nu
 };
 
 // 业务员消费确认列表（队长查看）
-export const useTeamMemberConsumes = (staffId: number, page?: number, size?: number, status?: string) => {
+export const useTeamMemberConsumes = (staffId: string, page?: number, size?: number, status?: string) => {
   return useQuery({
     queryKey: consumeKeys.staffList(staffId, page, size, status),
     queryFn: () => h5Api.staffConsumeApplies(staffId, page, size, status),

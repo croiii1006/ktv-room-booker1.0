@@ -48,7 +48,7 @@ export function BookingDetailDialog({
   const [remark, setRemark] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { data: res, isLoading } = useReservationDetail(bookingId ? parseInt(bookingId) : 0);
+  const { data: res, isLoading } = useReservationDetail(bookingId || '');
   const booking = res?.data?.data;
 
   const approveMutation = useApproveReservation();
@@ -82,7 +82,7 @@ export function BookingDetailDialog({
   const handleApprove = async () => {
       setIsSubmitting(true);
       try {
-          await approveMutation.mutateAsync({ id: parseInt(bookingId!), reviewerId: user?.id || 0 });
+          await approveMutation.mutateAsync({ id: bookingId!, reviewerId: user?.id || '0' });
           toast.success("订单已通过");
           onOpenChange(false);
       } catch (error) {
@@ -99,7 +99,7 @@ export function BookingDetailDialog({
     }
     setIsSubmitting(true);
     try {
-        await rejectMutation.mutateAsync({ id: parseInt(bookingId!), reviewerId: user?.id || 0, reason: rejectReason });
+        await rejectMutation.mutateAsync({ id: bookingId!, reviewerId: user?.id || '0', reason: rejectReason });
         toast.success("订单已驳回");
         setShowRejectForm(false);
         setRejectReason("");
@@ -120,11 +120,11 @@ export function BookingDetailDialog({
     setIsSubmitting(true);
     try {
         await createConsumeMutation.mutateAsync({
-            memberId: booking.memberId || 0,
-            storeId: booking.storeId || 1,
+            memberId: booking.memberId || '',
+            storeId: booking.storeId || '',
             roomId: booking.roomId,
             reservationId: booking.id,
-            applyStaffId: user?.id || 0,
+            applyStaffId: user?.id || '0',
             consumeAmount: parseFloat(consumeAmount),
             remark: remark,
             voucherUrls: imageUrl ? [imageUrl] : [],

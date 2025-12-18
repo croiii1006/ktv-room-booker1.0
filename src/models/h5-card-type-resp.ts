@@ -24,7 +24,7 @@ export interface H5CardTypeResp {
      * @type {number}
      * @memberof H5CardTypeResp
      */
-    id?: number;
+    id?: string;
     /**
      * 名称
      * @type {string}

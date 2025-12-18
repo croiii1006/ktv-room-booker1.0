@@ -24,7 +24,7 @@ export interface RechargeResp {
      * @type {number}
      * @memberof RechargeResp
      */
-    id?: number;
+    id?: string;
     /**
      * 申请单号
      * @type {string}
@@ -36,7 +36,7 @@ export interface RechargeResp {
      * @type {number}
      * @memberof RechargeResp
      */
-    memberId?: number;
+    memberId?: string;
     /**
      * 会员姓名
      * @type {string}
@@ -54,7 +54,7 @@ export interface RechargeResp {
      * @type {number}
      * @memberof RechargeResp
      */
-    storeId?: number;
+    storeId?: string;
     /**
      * 门店名称
      * @type {string}
@@ -66,7 +66,7 @@ export interface RechargeResp {
      * @type {number}
      * @memberof RechargeResp
      */
-    staffId?: number;
+    staffId?: string;
     /**
      * 申请人(业务员)姓名
      * @type {string}
@@ -96,7 +96,7 @@ export interface RechargeResp {
      * @type {number}
      * @memberof RechargeResp
      */
-    reviewerId?: number;
+    reviewerId?: string;
     /**
      * 审核人姓名
      * @type {string}

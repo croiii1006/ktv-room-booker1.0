@@ -24,13 +24,13 @@ export interface ReservationCancelReq {
      * @type {number}
      * @memberof ReservationCancelReq
      */
-    id: number;
+    id: string;
     /**
      * 取消人ID
      * @type {number}
      * @memberof ReservationCancelReq
      */
-    staffId: number;
+    staffId: string;
     /**
      * 取消原因
      * @type {string}

@@ -24,7 +24,7 @@ export interface H5TeamStaffResp {
      * @type {number}
      * @memberof H5TeamStaffResp
      */
-    id?: number;
+    id?: string;
     /**
      * 姓名
      * @type {string}
@@ -42,7 +42,7 @@ export interface H5TeamStaffResp {
      * @type {number}
      * @memberof H5TeamStaffResp
      */
-    storeId?: number;
+    storeId?: string;
     /**
      * 门店名称
      * @type {string}

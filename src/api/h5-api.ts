@@ -395,7 +395,7 @@ export const H5ApiAxiosParamCreator = function (configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        detail: async (id: number, options: any = {}): Promise<RequestArgs> => {
+        detail: async (id: string, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'id' is not null or undefined
             if (id === null || id === undefined) {
                 throw new RequiredError('id','Required parameter id was null or undefined when calling detail.');
@@ -431,7 +431,7 @@ export const H5ApiAxiosParamCreator = function (configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        detail1: async (id: number, options: any = {}): Promise<RequestArgs> => {
+        detail1: async (id: string, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'id' is not null or undefined
             if (id === null || id === undefined) {
                 throw new RequiredError('id','Required parameter id was null or undefined when calling detail1.');
@@ -467,7 +467,7 @@ export const H5ApiAxiosParamCreator = function (configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        detail2: async (memberId: number, options: any = {}): Promise<RequestArgs> => {
+        detail2: async (memberId: string, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'memberId' is not null or undefined
             if (memberId === null || memberId === undefined) {
                 throw new RequiredError('memberId','Required parameter memberId was null or undefined when calling detail2.');
@@ -503,7 +503,7 @@ export const H5ApiAxiosParamCreator = function (configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        detail3: async (id: number, options: any = {}): Promise<RequestArgs> => {
+        detail3: async (id: string, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'id' is not null or undefined
             if (id === null || id === undefined) {
                 throw new RequiredError('id','Required parameter id was null or undefined when calling detail3.');
@@ -1036,7 +1036,7 @@ export const H5ApiAxiosParamCreator = function (configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        schedule: async (startDate: string, endDate: string, storeId?: number, options: any = {}): Promise<RequestArgs> => {
+        schedule: async (startDate: string, endDate: string, storeId?: string, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'startDate' is not null or undefined
             if (startDate === null || startDate === undefined) {
                 throw new RequiredError('startDate','Required parameter startDate was null or undefined when calling schedule.');
@@ -1090,7 +1090,7 @@ export const H5ApiAxiosParamCreator = function (configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        staffConsumeApplies: async (staffId: number, page?: number, size?: number, status?: string, options: any = {}): Promise<RequestArgs> => {
+        staffConsumeApplies: async (staffId: string, page?: number, size?: number, status?: string, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'staffId' is not null or undefined
             if (staffId === null || staffId === undefined) {
                 throw new RequiredError('staffId','Required parameter staffId was null or undefined when calling staffConsumeApplies.');
@@ -1138,7 +1138,7 @@ export const H5ApiAxiosParamCreator = function (configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        staffDetail: async (staffId: number, options: any = {}): Promise<RequestArgs> => {
+        staffDetail: async (staffId: string, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'staffId' is not null or undefined
             if (staffId === null || staffId === undefined) {
                 throw new RequiredError('staffId','Required parameter staffId was null or undefined when calling staffDetail.');
@@ -1177,7 +1177,7 @@ export const H5ApiAxiosParamCreator = function (configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        staffRechargeApplies: async (staffId: number, page?: number, size?: number, status?: string, options: any = {}): Promise<RequestArgs> => {
+        staffRechargeApplies: async (staffId: string, page?: number, size?: number, status?: string, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'staffId' is not null or undefined
             if (staffId === null || staffId === undefined) {
                 throw new RequiredError('staffId','Required parameter staffId was null or undefined when calling staffRechargeApplies.');
@@ -1228,7 +1228,7 @@ export const H5ApiAxiosParamCreator = function (configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        staffReservations: async (staffId: number, page?: number, size?: number, status?: string, options: any = {}): Promise<RequestArgs> => {
+        staffReservations: async (staffId: string, page?: number, size?: number, status?: string, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'staffId' is not null or undefined
             if (staffId === null || staffId === undefined) {
                 throw new RequiredError('staffId','Required parameter staffId was null or undefined when calling staffReservations.');
@@ -1451,7 +1451,7 @@ export const H5ApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async detail(id: number, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultReservationResp>> {
+        async detail(id: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultReservationResp>> {
             const localVarAxiosArgs = await H5ApiAxiosParamCreator(configuration).detail(id, options);
             return (axios: AxiosInstance = globalAxios, basePath: string = BASE_PATH) => {
                 const axiosRequestArgs = {...localVarAxiosArgs.options, url: basePath + localVarAxiosArgs.url};
@@ -1465,7 +1465,7 @@ export const H5ApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async detail1(id: number, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultRechargeResp>> {
+        async detail1(id: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultRechargeResp>> {
             const localVarAxiosArgs = await H5ApiAxiosParamCreator(configuration).detail1(id, options);
             return (axios: AxiosInstance = globalAxios, basePath: string = BASE_PATH) => {
                 const axiosRequestArgs = {...localVarAxiosArgs.options, url: basePath + localVarAxiosArgs.url};
@@ -1479,7 +1479,7 @@ export const H5ApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async detail2(memberId: number, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultH5MemberResp>> {
+        async detail2(memberId: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultH5MemberResp>> {
             const localVarAxiosArgs = await H5ApiAxiosParamCreator(configuration).detail2(memberId, options);
             return (axios: AxiosInstance = globalAxios, basePath: string = BASE_PATH) => {
                 const axiosRequestArgs = {...localVarAxiosArgs.options, url: basePath + localVarAxiosArgs.url};
@@ -1493,7 +1493,7 @@ export const H5ApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async detail3(id: number, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultConsumeResp>> {
+        async detail3(id: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultConsumeResp>> {
             const localVarAxiosArgs = await H5ApiAxiosParamCreator(configuration).detail3(id, options);
             return (axios: AxiosInstance = globalAxios, basePath: string = BASE_PATH) => {
                 const axiosRequestArgs = {...localVarAxiosArgs.options, url: basePath + localVarAxiosArgs.url};
@@ -1699,7 +1699,7 @@ export const H5ApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async schedule(startDate: string, endDate: string, storeId?: number, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultRoomScheduleResp>> {
+        async schedule(startDate: string, endDate: string, storeId?: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultRoomScheduleResp>> {
             const localVarAxiosArgs = await H5ApiAxiosParamCreator(configuration).schedule(startDate, endDate, storeId, options);
             return (axios: AxiosInstance = globalAxios, basePath: string = BASE_PATH) => {
                 const axiosRequestArgs = {...localVarAxiosArgs.options, url: basePath + localVarAxiosArgs.url};
@@ -1716,7 +1716,7 @@ export const H5ApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async staffConsumeApplies(staffId: number, page?: number, size?: number, status?: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultPageResultConsumeResp>> {
+        async staffConsumeApplies(staffId: string, page?: number, size?: number, status?: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultPageResultConsumeResp>> {
             const localVarAxiosArgs = await H5ApiAxiosParamCreator(configuration).staffConsumeApplies(staffId, page, size, status, options);
             return (axios: AxiosInstance = globalAxios, basePath: string = BASE_PATH) => {
                 const axiosRequestArgs = {...localVarAxiosArgs.options, url: basePath + localVarAxiosArgs.url};
@@ -1730,7 +1730,7 @@ export const H5ApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async staffDetail(staffId: number, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultH5TeamStaffResp>> {
+        async staffDetail(staffId: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultH5TeamStaffResp>> {
             const localVarAxiosArgs = await H5ApiAxiosParamCreator(configuration).staffDetail(staffId, options);
             return (axios: AxiosInstance = globalAxios, basePath: string = BASE_PATH) => {
                 const axiosRequestArgs = {...localVarAxiosArgs.options, url: basePath + localVarAxiosArgs.url};
@@ -1747,7 +1747,7 @@ export const H5ApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async staffRechargeApplies(staffId: number, page?: number, size?: number, status?: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultPageResultRechargeResp>> {
+        async staffRechargeApplies(staffId: string, page?: number, size?: number, status?: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultPageResultRechargeResp>> {
             const localVarAxiosArgs = await H5ApiAxiosParamCreator(configuration).staffRechargeApplies(staffId, page, size, status, options);
             return (axios: AxiosInstance = globalAxios, basePath: string = BASE_PATH) => {
                 const axiosRequestArgs = {...localVarAxiosArgs.options, url: basePath + localVarAxiosArgs.url};
@@ -1764,7 +1764,7 @@ export const H5ApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async staffReservations(staffId: number, page?: number, size?: number, status?: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultPageResultReservationResp>> {
+        async staffReservations(staffId: string, page?: number, size?: number, status?: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ResultPageResultReservationResp>> {
             const localVarAxiosArgs = await H5ApiAxiosParamCreator(configuration).staffReservations(staffId, page, size, status, options);
             return (axios: AxiosInstance = globalAxios, basePath: string = BASE_PATH) => {
                 const axiosRequestArgs = {...localVarAxiosArgs.options, url: basePath + localVarAxiosArgs.url};
@@ -1892,7 +1892,7 @@ export const H5ApiFactory = function (configuration?: Configuration, basePath?: 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        detail(id: number, options?: any): AxiosPromise<ResultReservationResp> {
+        detail(id: string, options?: any): AxiosPromise<ResultReservationResp> {
             return H5ApiFp(configuration).detail(id, options).then((request) => request(axios, basePath));
         },
         /**
@@ -1902,7 +1902,7 @@ export const H5ApiFactory = function (configuration?: Configuration, basePath?: 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        detail1(id: number, options?: any): AxiosPromise<ResultRechargeResp> {
+        detail1(id: string, options?: any): AxiosPromise<ResultRechargeResp> {
             return H5ApiFp(configuration).detail1(id, options).then((request) => request(axios, basePath));
         },
         /**
@@ -1912,7 +1912,7 @@ export const H5ApiFactory = function (configuration?: Configuration, basePath?: 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        detail2(memberId: number, options?: any): AxiosPromise<ResultH5MemberResp> {
+        detail2(memberId: string, options?: any): AxiosPromise<ResultH5MemberResp> {
             return H5ApiFp(configuration).detail2(memberId, options).then((request) => request(axios, basePath));
         },
         /**
@@ -1922,7 +1922,7 @@ export const H5ApiFactory = function (configuration?: Configuration, basePath?: 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        detail3(id: number, options?: any): AxiosPromise<ResultConsumeResp> {
+        detail3(id: string, options?: any): AxiosPromise<ResultConsumeResp> {
             return H5ApiFp(configuration).detail3(id, options).then((request) => request(axios, basePath));
         },
         /**
@@ -2072,7 +2072,7 @@ export const H5ApiFactory = function (configuration?: Configuration, basePath?: 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        schedule(startDate: string, endDate: string, storeId?: number, options?: any): AxiosPromise<ResultRoomScheduleResp> {
+        schedule(startDate: string, endDate: string, storeId?: string, options?: any): AxiosPromise<ResultRoomScheduleResp> {
             return H5ApiFp(configuration).schedule(startDate, endDate, storeId, options).then((request) => request(axios, basePath));
         },
         /**
@@ -2085,7 +2085,7 @@ export const H5ApiFactory = function (configuration?: Configuration, basePath?: 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        staffConsumeApplies(staffId: number, page?: number, size?: number, status?: string, options?: any): AxiosPromise<ResultPageResultConsumeResp> {
+        staffConsumeApplies(staffId: string, page?: number, size?: number, status?: string, options?: any): AxiosPromise<ResultPageResultConsumeResp> {
             return H5ApiFp(configuration).staffConsumeApplies(staffId, page, size, status, options).then((request) => request(axios, basePath));
         },
         /**
@@ -2095,7 +2095,7 @@ export const H5ApiFactory = function (configuration?: Configuration, basePath?: 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        staffDetail(staffId: number, options?: any): AxiosPromise<ResultH5TeamStaffResp> {
+        staffDetail(staffId: string, options?: any): AxiosPromise<ResultH5TeamStaffResp> {
             return H5ApiFp(configuration).staffDetail(staffId, options).then((request) => request(axios, basePath));
         },
         /**
@@ -2108,7 +2108,7 @@ export const H5ApiFactory = function (configuration?: Configuration, basePath?: 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        staffRechargeApplies(staffId: number, page?: number, size?: number, status?: string, options?: any): AxiosPromise<ResultPageResultRechargeResp> {
+        staffRechargeApplies(staffId: string, page?: number, size?: number, status?: string, options?: any): AxiosPromise<ResultPageResultRechargeResp> {
             return H5ApiFp(configuration).staffRechargeApplies(staffId, page, size, status, options).then((request) => request(axios, basePath));
         },
         /**
@@ -2121,7 +2121,7 @@ export const H5ApiFactory = function (configuration?: Configuration, basePath?: 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        staffReservations(staffId: number, page?: number, size?: number, status?: string, options?: any): AxiosPromise<ResultPageResultReservationResp> {
+        staffReservations(staffId: string, page?: number, size?: number, status?: string, options?: any): AxiosPromise<ResultPageResultReservationResp> {
             return H5ApiFp(configuration).staffReservations(staffId, page, size, status, options).then((request) => request(axios, basePath));
         },
         /**
@@ -2261,7 +2261,7 @@ export class H5Api extends BaseAPI {
      * @throws {RequiredError}
      * @memberof H5Api
      */
-    public detail(id: number, options?: any) {
+    public detail(id: string, options?: any) {
         return H5ApiFp(this.configuration).detail(id, options).then((request) => request(this.axios, this.basePath));
     }
 
@@ -2273,7 +2273,7 @@ export class H5Api extends BaseAPI {
      * @throws {RequiredError}
      * @memberof H5Api
      */
-    public detail1(id: number, options?: any) {
+    public detail1(id: string, options?: any) {
         return H5ApiFp(this.configuration).detail1(id, options).then((request) => request(this.axios, this.basePath));
     }
 
@@ -2285,7 +2285,7 @@ export class H5Api extends BaseAPI {
      * @throws {RequiredError}
      * @memberof H5Api
      */
-    public detail2(memberId: number, options?: any) {
+    public detail2(memberId: string, options?: any) {
         return H5ApiFp(this.configuration).detail2(memberId, options).then((request) => request(this.axios, this.basePath));
     }
 
@@ -2297,7 +2297,7 @@ export class H5Api extends BaseAPI {
      * @throws {RequiredError}
      * @memberof H5Api
      */
-    public detail3(id: number, options?: any) {
+    public detail3(id: string, options?: any) {
         return H5ApiFp(this.configuration).detail3(id, options).then((request) => request(this.axios, this.basePath));
     }
 
@@ -2475,7 +2475,7 @@ export class H5Api extends BaseAPI {
      * @throws {RequiredError}
      * @memberof H5Api
      */
-    public schedule(startDate: string, endDate: string, storeId?: number, options?: any) {
+    public schedule(startDate: string, endDate: string, storeId?: string, options?: any) {
         return H5ApiFp(this.configuration).schedule(startDate, endDate, storeId, options).then((request) => request(this.axios, this.basePath));
     }
 
@@ -2490,7 +2490,7 @@ export class H5Api extends BaseAPI {
      * @throws {RequiredError}
      * @memberof H5Api
      */
-    public staffConsumeApplies(staffId: number, page?: number, size?: number, status?: string, options?: any) {
+    public staffConsumeApplies(staffId: string, page?: number, size?: number, status?: string, options?: any) {
         return H5ApiFp(this.configuration).staffConsumeApplies(staffId, page, size, status, options).then((request) => request(this.axios, this.basePath));
     }
 
@@ -2502,7 +2502,7 @@ export class H5Api extends BaseAPI {
      * @throws {RequiredError}
      * @memberof H5Api
      */
-    public staffDetail(staffId: number, options?: any) {
+    public staffDetail(staffId: string, options?: any) {
         return H5ApiFp(this.configuration).staffDetail(staffId, options).then((request) => request(this.axios, this.basePath));
     }
 
@@ -2517,7 +2517,7 @@ export class H5Api extends BaseAPI {
      * @throws {RequiredError}
      * @memberof H5Api
      */
-    public staffRechargeApplies(staffId: number, page?: number, size?: number, status?: string, options?: any) {
+    public staffRechargeApplies(staffId: string, page?: number, size?: number, status?: string, options?: any) {
         return H5ApiFp(this.configuration).staffRechargeApplies(staffId, page, size, status, options).then((request) => request(this.axios, this.basePath));
     }
 
@@ -2532,7 +2532,7 @@ export class H5Api extends BaseAPI {
      * @throws {RequiredError}
      * @memberof H5Api
      */
-    public staffReservations(staffId: number, page?: number, size?: number, status?: string, options?: any) {
+    public staffReservations(staffId: string, page?: number, size?: number, status?: string, options?: any) {
         return H5ApiFp(this.configuration).staffReservations(staffId, page, size, status, options).then((request) => request(this.axios, this.basePath));
     }
 

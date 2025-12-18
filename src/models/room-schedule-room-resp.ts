@@ -25,13 +25,13 @@ export interface RoomScheduleRoomResp {
      * @type {number}
      * @memberof RoomScheduleRoomResp
      */
-    id?: number;
+    id?: string;
     /**
      * 门店ID
      * @type {number}
      * @memberof RoomScheduleRoomResp
      */
-    storeId?: number;
+    storeId?: string;
     /**
      * 
      * @type {string}

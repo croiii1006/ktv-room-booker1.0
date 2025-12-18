@@ -12,7 +12,7 @@ export default function CustomerDetail() {
   const navigate = useNavigate();
   
   // Use Query hook
-  const { data: detailData, isLoading, error } = useMemberDetail(parseInt(id || '0'));
+  const { data: detailData, isLoading, error } = useMemberDetail(id || '0');
   
   if (isLoading) {
     return (
@@ -39,7 +39,7 @@ export default function CustomerDetail() {
   const m = detailData.data.data;
   // Adapter to match existing UI usage or use data directly
   const customer = {
-    id: m.id?.toString() || '',
+    id: m.id || '',
     name: m.name || '',
     phone: m.phone || '',
     idCard: '', 
@@ -48,7 +48,7 @@ export default function CustomerDetail() {
     openDate: m.createdAt ? format(new Date(m.createdAt), 'yyyy-MM-dd HH:mm') : '-',
     balance: m.balance || 0,
     giftAmount: m.giftBalance || 0,
-    salesId: m.staffId?.toString() || '',
+    salesId: m.staffId || '',
     storeName: m.storeName || '',
     staffName: m.staffName || '',
     cardNo: m.cardNo || '',

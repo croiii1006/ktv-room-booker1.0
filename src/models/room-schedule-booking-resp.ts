@@ -30,7 +30,7 @@ export interface RoomScheduleBookingResp {
      * @type {number}
      * @memberof RoomScheduleBookingResp
      */
-    reservationId?: number;
+    reservationId?: string;
     /**
      * 预订单号
      * @type {string}
@@ -60,13 +60,13 @@ export interface RoomScheduleBookingResp {
      * @type {number}
      * @memberof RoomScheduleBookingResp
      */
-    memberId?: number;
+    memberId?: string;
     /**
      * 业务员ID
      * @type {number}
      * @memberof RoomScheduleBookingResp
      */
-    staffId?: number;
+    staffId?: string;
 }
 
 /**

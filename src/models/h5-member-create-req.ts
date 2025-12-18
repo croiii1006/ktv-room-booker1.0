@@ -24,7 +24,7 @@ export interface H5MemberCreateReq {
      * @type {number}
      * @memberof H5MemberCreateReq
      */
-    cardTypeId?: number;
+    cardTypeId?: string;
     /**
      * 姓名
      * @type {string}

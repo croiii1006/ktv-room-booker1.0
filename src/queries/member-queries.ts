@@ -7,7 +7,7 @@ export const memberKeys = {
   lists: () => [...memberKeys.all, 'list'] as const,
   list: (page?: number, size?: number, keyword?: string) => [...memberKeys.lists(), { page, size, keyword }] as const,
   details: () => [...memberKeys.all, 'detail'] as const,
-  detail: (id: number) => [...memberKeys.details(), id] as const,
+  detail: (id: string) => [...memberKeys.details(), id] as const,
 };
 
 // 我的客户列表
@@ -20,7 +20,7 @@ export const useMemberList = (page?: number, size?: number, keyword?: string, op
 };
 
 // 客户详情
-export const useMemberDetail = (id: number) => {
+export const useMemberDetail = (id: string) => {
   return useQuery({
     queryKey: memberKeys.detail(id),
     queryFn: () => h5Api.detail2(id),

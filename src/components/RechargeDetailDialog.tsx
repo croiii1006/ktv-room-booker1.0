@@ -32,7 +32,7 @@ export function RechargeDetailDialog({
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [reason, setReason] = useState('');
 
-  const { data: res, isLoading } = useRechargeDetail(requestId ? parseInt(requestId) : 0);
+  const { data: res, isLoading } = useRechargeDetail(requestId || '');
   const request = res?.data?.data;
 
   const approveMutation = useApproveRecharge();
@@ -44,7 +44,7 @@ export function RechargeDetailDialog({
 
   const handleApprove = async () => {
     try {
-        await approveMutation.mutateAsync({ id: parseInt(requestId), reviewerId: user?.id || 0 });
+        await approveMutation.mutateAsync({ id: requestId, reviewerId: user?.id || '0' });
         toast.success('充值申请已通过');
         onClose();
     } catch (e) {
@@ -58,7 +58,7 @@ export function RechargeDetailDialog({
       return;
     }
     try {
-        await rejectMutation.mutateAsync({ id: parseInt(requestId), reviewerId: user?.id || 0, reason });
+        await rejectMutation.mutateAsync({ id: requestId, reviewerId: user?.id || '0', reason });
         toast.success('充值申请已驳回');
         setShowRejectForm(false);
         setReason('');

@@ -24,7 +24,7 @@ export interface StoreSimpleResp {
      * @type {number}
      * @memberof StoreSimpleResp
      */
-    id?: number;
+    id?: string;
     /**
      * 门店名称
      * @type {string}

@@ -24,25 +24,25 @@ export interface ReservationCreateReq {
      * @type {number}
      * @memberof ReservationCreateReq
      */
-    storeId: number;
+    storeId: string;
     /**
      * 房间ID
      * @type {number}
      * @memberof ReservationCreateReq
      */
-    roomId: number;
+    roomId: string;
     /**
      * 会员ID
      * @type {number}
      * @memberof ReservationCreateReq
      */
-    memberId: number;
+    memberId: string;
     /**
      * 申请人(业务员)ID
      * @type {number}
      * @memberof ReservationCreateReq
      */
-    staffId: number;
+    staffId: string;
     /**
      * 预定日期 yyyy-MM-dd
      * @type {string}

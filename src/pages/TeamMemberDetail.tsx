@@ -28,7 +28,7 @@ export default function TeamMemberDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  const staffId = parseInt(id || '0');
+  const staffId = id || '0';
   
   const { data: memberDetail, isLoading: isLoadingMember } = useTeamMemberDetail(staffId);
   // memberDetail.data.data is H5TeamStaffResp
@@ -58,7 +58,7 @@ export default function TeamMemberDetail() {
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const { data: scheduleData } = useRoomSchedule(todayStr, todayStr, user?.storeId);
   const rooms = scheduleData?.data?.data?.rooms || [];
-  const getRoomInfo = (roomId: number) => {
+  const getRoomInfo = (roomId: string) => {
     const room = rooms.find((r: any) => r.id === roomId);
     return room ? `${room.roomType || ''} ${room.roomNo || ''}` : `房间ID:${roomId}`;
   };

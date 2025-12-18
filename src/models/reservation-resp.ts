@@ -24,7 +24,7 @@ export interface ReservationResp {
      * @type {number}
      * @memberof ReservationResp
      */
-    id?: number;
+    id?: string;
     /**
      * 预定号
      * @type {string}
@@ -36,7 +36,7 @@ export interface ReservationResp {
      * @type {number}
      * @memberof ReservationResp
      */
-    storeId?: number;
+    storeId?: string;
     /**
      * 门店名称
      * @type {string}
@@ -48,7 +48,7 @@ export interface ReservationResp {
      * @type {number}
      * @memberof ReservationResp
      */
-    roomId?: number;
+    roomId?: string;
     /**
      * 房间名称
      * @type {string}
@@ -90,7 +90,7 @@ export interface ReservationResp {
      * @type {number}
      * @memberof ReservationResp
      */
-    memberId?: number;
+    memberId?: string;
     /**
      * 客户姓名
      * @type {string}
@@ -102,7 +102,7 @@ export interface ReservationResp {
      * @type {number}
      * @memberof ReservationResp
      */
-    staffId?: number;
+    staffId?: string;
     /**
      * 申请人(业务员)姓名
      * @type {string}
@@ -150,7 +150,7 @@ export interface ReservationResp {
      * @type {number}
      * @memberof ReservationResp
      */
-    reviewerId?: number;
+    reviewerId?: string;
     /**
      * 审核时间
      * @type {string}
@@ -162,7 +162,7 @@ export interface ReservationResp {
      * @type {number}
      * @memberof ReservationResp
      */
-    cancelledByStaffId?: number;
+    cancelledByStaffId?: string;
     /**
      * 取消原因
      * @type {string}

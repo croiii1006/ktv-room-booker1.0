@@ -1,8 +1,8 @@
 export interface AdminDirectReservationReq {
-    storeId: number;
-    roomId: number;
-    memberId: number;
-    staffId?: number;
+    storeId: string;
+    roomId: string;
+    memberId: string;
+    staffId?: string;
     reserveDate: string;
     guestCount?: number;
     remark?: string;

@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import { toast } from 'sonner';
+import JSONBig from 'json-bigint';
 
 const API_BASE_URL = '';
 
@@ -15,6 +16,18 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  transformResponse: [
+    (data) => {
+      if (typeof data === 'string') {
+        try {
+          return JSONBig({ storeAsString: true }).parse(data);
+        } catch (e) {
+          return data;
+        }
+      }
+      return data;
+    },
+  ],
 });
 
 // 请求拦截器：添加 Authorization 头

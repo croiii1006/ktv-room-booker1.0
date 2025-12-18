@@ -5,12 +5,12 @@ import { toast } from 'sonner';
 export type UserRole = 'sales' | 'leader';
 
 export interface User {
-  id: number;
+  id: string;
   name: string;
   staffNo: string;
   role: UserRole;
-  storeId?: number;
-  leaderId?: number;
+  storeId?: string;
+  leaderId?: string;
 }
 
 interface AuthContextType {
@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             role = 'leader';
           }
           const userData: User = {
-            id: staff.id || 0,
+            id: staff.id || '0',
             name: staff.name || '',
             staffNo: staff.username || '',
             role,

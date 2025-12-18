@@ -9,9 +9,9 @@ export const rechargeKeys = {
   pendingLists: () => [...rechargeKeys.all, 'pending'] as const,
   pendingList: (page?: number, size?: number) => [...rechargeKeys.pendingLists(), { page, size }] as const,
   details: () => [...rechargeKeys.all, 'detail'] as const,
-  detail: (id: number) => [...rechargeKeys.details(), id] as const,
+  detail: (id: string) => [...rechargeKeys.details(), id] as const,
   staffLists: () => [...rechargeKeys.all, 'staff'] as const,
-  staffList: (staffId: number, page?: number, size?: number, status?: string) => [...rechargeKeys.staffLists(), staffId, { page, size, status }] as const,
+  staffList: (staffId: string, page?: number, size?: number, status?: string) => [...rechargeKeys.staffLists(), staffId, { page, size, status }] as const,
 };
 
 // 我的充值申请列表
@@ -31,7 +31,7 @@ export const usePendingRechargeList = (page?: number, size?: number) => {
 };
 
 // 充值申请详情
-export const useRechargeDetail = (id: number) => {
+export const useRechargeDetail = (id: string) => {
   return useQuery({
     queryKey: rechargeKeys.detail(id),
     queryFn: () => h5Api.detail1(id),
