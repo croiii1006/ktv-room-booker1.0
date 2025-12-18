@@ -95,17 +95,21 @@ export interface Booking {
 
 export interface RechargeRequest {
   id: string;
+  applyNo?: string;
   customerId: string;
   customerName: string;
   amount: number;
   giftProduct: string;
+  giftAmount: number;
   imageUrl?: string;
   status: RequestStatus;
   salesId: string;
   salesName: string;
   salesStaffNo: string;
   leaderId: string;
+  storeId?: number;
   createdAt: string;
+  updatedAt?: string;
   rejectReason?: string;
 }
 
@@ -575,16 +579,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (resRecharge.code === 200 && resRecharge.data && resRecharge.data.list) {
             const myRecharges = resRecharge.data.list.map(r => ({
                id: r.id?.toString() || '',
+               applyNo: r.applyNo,
                customerId: r.memberId?.toString() || '',
                customerName: r.memberName || 'Unknown',
                amount: r.amount || 0,
                giftProduct: r.giftAmount ? `送${r.giftAmount}` : '',
+               giftAmount: r.giftAmount || 0,
                status: (r.status === 'PENDING' ? 'pending' : r.status === 'APPROVED' ? 'approved' : 'rejected') as RequestStatus,
                salesId: r.staffId?.toString() || '',
                salesName: 'Me',
                salesStaffNo: r.staffId?.toString() || '',
                leaderId: '',
+               storeId: r.storeId,
                createdAt: r.createdAt || '',
+               updatedAt: r.updatedAt,
                rejectReason: r.remark
              }));
              setRechargeRequests(prev => {

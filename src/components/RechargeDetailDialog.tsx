@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { format } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -12,6 +13,7 @@ import { useData } from '@/contexts/DataContext';
 import { toast } from 'sonner';
 import { MemberNameDisplay } from './MemberNameDisplay';
 import { StaffNameDisplay } from './StaffNameDisplay';
+import { useRechargeDetail, useApproveRecharge, useRejectRecharge } from '@/queries/recharge-queries';
 
 interface RechargeDetailDialogProps {
   open: boolean;
@@ -26,40 +28,57 @@ export function RechargeDetailDialog({
   requestId,
   showActions,
 }: RechargeDetailDialogProps) {
-  const { rechargeRequests, updateRechargeStatus, teamMembers, user } = useData();
+  const { teamMembers, user } = useData();
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [reason, setReason] = useState('');
 
-  const request = rechargeRequests.find((r) => r.id === requestId);
+  const { data: res, isLoading } = useRechargeDetail(requestId ? parseInt(requestId) : 0);
+  const request = res?.data?.data;
 
+  const approveMutation = useApproveRecharge();
+  const rejectMutation = useRejectRecharge();
+
+  if (!open) return null;
+  if (isLoading) return null; // Or show loading state
   if (!request) return null;
 
   // Resolve Sales Name
-  let salesName = request.salesName;
-  if (!salesName || salesName === 'Unknown' || salesName === request.salesId) {
-      const staff = teamMembers.find(t => t.id === request.salesId || t.staffNo === request.salesStaffNo);
-      if (staff) salesName = staff.name;
-      else if (user && (user.id.toString() === request.salesId || user.staffNo === request.salesStaffNo)) {
-          salesName = user.name;
-      }
+  // API returns staffId
+  const staffId = request.staffId;
+  let salesName = 'Unknown';
+  
+  const staff = teamMembers.find(t => t.id === staffId?.toString() || t.staffNo === staffId?.toString());
+  if (staff) salesName = staff.name;
+  else if (user && (user.id === staffId || user.staffNo === staffId?.toString())) {
+      salesName = user.name;
+  } else if (request.staffId) {
+      salesName = `Staff #${request.staffId}`;
   }
 
-  const handleApprove = () => {
-    updateRechargeStatus(requestId, 'approved');
-    toast.success('充值申请已通过');
-    onClose();
+  const handleApprove = async () => {
+    try {
+        await approveMutation.mutateAsync({ id: parseInt(requestId), reviewerId: user?.id || 0 });
+        toast.success('充值申请已通过');
+        onClose();
+    } catch (e) {
+        toast.error('操作失败');
+    }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!reason.trim()) {
       toast.error('请填写驳回理由');
       return;
     }
-    updateRechargeStatus(requestId, 'rejected', reason);
-    toast.success('充值申请已驳回');
-    setShowRejectForm(false);
-    setReason('');
-    onClose();
+    try {
+        await rejectMutation.mutateAsync({ id: parseInt(requestId), reviewerId: user?.id || 0, reason });
+        toast.success('充值申请已驳回');
+        setShowRejectForm(false);
+        setReason('');
+        onClose();
+    } catch (e) {
+        toast.error('操作失败');
+    }
   };
 
   return (
@@ -71,39 +90,59 @@ export function RechargeDetailDialog({
 
         <div className="space-y-4 py-4">
           <div className="flex justify-center mb-4">
-            <RequestStatusBadge status={request.status} className="text-sm px-4 py-1.5" />
+            <RequestStatusBadge status={request.status?.toLowerCase() || 'pending'} className="text-sm px-4 py-1.5" />
           </div>
 
           <div className="bg-secondary/50 rounded-lg p-4 space-y-3">
+             <div className="flex justify-between">
+              <span className="text-muted-foreground">申请单号</span>
+              <span className="font-medium text-sm">{request.applyNo || '-'}</span>
+            </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">客户姓名</span>
-              <span className="font-medium">{request.customerName}</span>
+              <span className="font-medium">
+                  <MemberNameDisplay id={request.memberId?.toString() || ''} initialName={request.memberName} />
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">充值金额</span>
-              <span className="font-medium text-primary">¥{request.amount}</span>
+              <span className="font-medium text-primary">¥{(request.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
-            {request.giftProduct && (
+            {(request.giftAmount !== undefined && request.giftAmount !== null) ? (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">赠送产品</span>
-                <span className="font-medium">{request.giftProduct}</span>
+                <span className="text-muted-foreground">赠送金额</span>
+                <span className="font-medium">¥{(request.giftAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
-            )}
+            ) : null}
+            
+             <div className="flex justify-between">
+              <span className="text-muted-foreground">门店</span>
+              <span className="font-medium">{request.storeId ? `门店 #${request.storeId}` : '-'}</span>
+            </div>
+
             <div className="flex justify-between">
               <span className="text-muted-foreground">申请人</span>
               <span className="font-medium">
                 <StaffNameDisplay 
-                  id={request.salesId} 
+                  id={request.staffId?.toString() || ''} 
                   initialName={salesName} 
-                  staffNo={request.salesStaffNo}
-                  showStaffNo
+                  // staffNo={request.salesStaffNo} // Not in API response
+                  showStaffNo={false}
                 />
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">申请时间</span>
-              <span className="font-medium text-sm">{request.createdAt}</span>
+              <span className="font-medium text-sm">{request.createdAt ? format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm') : ''}</span>
             </div>
+            
+            {request.updatedAt && (
+             <div className="flex justify-between">
+              <span className="text-muted-foreground">更新时间</span>
+              <span className="font-medium text-sm">{format(new Date(request.updatedAt), 'yyyy-MM-dd HH:mm')}</span>
+            </div>
+            )}
+
             {request.rejectReason && (
               <div className="border-t border-border pt-3 mt-3">
                 <p className="text-sm text-muted-foreground mb-1">驳回理由：</p>
@@ -112,12 +151,19 @@ export function RechargeDetailDialog({
             )}
           </div>
 
-          {request.imageUrl && (
+          {request.voucherUrls && request.voucherUrls.length > 0 && (
             <div>
               <p className="text-sm font-medium text-foreground mb-2">凭证截图</p>
-              <img src={request.imageUrl} alt="凭证" className="w-full rounded-lg" />
+              <div className="grid grid-cols-2 gap-2">
+                  {request.voucherUrls.map((url, idx) => (
+                      <img key={idx} src={url} alt={`凭证 ${idx + 1}`} className="w-full rounded-lg" />
+                  ))}
+              </div>
             </div>
           )}
+          {/* Fallback for single imageUrl if API model differs from actual response or if previously used */}
+           {/* The user JSON showed voucherUrls: Array<string> */}
+          
 
           {/* Reject Form */}
           {showRejectForm && (
@@ -133,8 +179,8 @@ export function RechargeDetailDialog({
                 <Button variant="mobileSecondary" size="full" onClick={() => setShowRejectForm(false)}>
                   取消
                 </Button>
-                <Button variant="danger" size="full" onClick={handleReject}>
-                  确认驳回
+                <Button variant="danger" size="full" onClick={handleReject} disabled={rejectMutation.isPending}>
+                  {rejectMutation.isPending ? '提交中...' : '确认驳回'}
                 </Button>
               </div>
             </div>
@@ -142,13 +188,13 @@ export function RechargeDetailDialog({
         </div>
 
         {!showRejectForm && (
-          showActions && request.status === 'pending' ? (
+          showActions && (request.status === 'PENDING' || request.status === 'pending') ? (
             <div className="flex gap-3">
               <Button variant="danger" size="full" onClick={() => setShowRejectForm(true)}>
                 驳回
               </Button>
-              <Button variant="success" size="full" onClick={handleApprove}>
-                通过
+              <Button variant="success" size="full" onClick={handleApprove} disabled={approveMutation.isPending}>
+                 {approveMutation.isPending ? '提交中...' : '通过'}
               </Button>
             </div>
           ) : (
