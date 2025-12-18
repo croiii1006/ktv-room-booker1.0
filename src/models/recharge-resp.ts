@@ -68,6 +68,12 @@ export interface RechargeResp {
      */
     staffId?: number;
     /**
+     * 申请人(业务员)姓名
+     * @type {string}
+     * @memberof RechargeResp
+     */
+    staffName?: string;
+    /**
      * 本金
      * @type {number}
      * @memberof RechargeResp
@@ -91,6 +97,12 @@ export interface RechargeResp {
      * @memberof RechargeResp
      */
     reviewerId?: number;
+    /**
+     * 审核人姓名
+     * @type {string}
+     * @memberof RechargeResp
+     */
+    reviewerName?: string;
     /**
      * 审核时间
      * @type {string}

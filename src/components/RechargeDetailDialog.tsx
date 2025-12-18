@@ -104,7 +104,7 @@ export function RechargeDetailDialog({
             
              <div className="flex justify-between">
               <span className="text-muted-foreground">门店</span>
-              <span className="font-medium">{request.storeId ? `门店 #${request.storeId}` : '-'}</span>
+              <span className="font-medium">{request.storeName || (request.storeId ? `门店 #${request.storeId}` : '-')}</span>
             </div>
 
             <div className="flex justify-between">
@@ -112,10 +112,33 @@ export function RechargeDetailDialog({
               <span className="font-medium">
                 <StaffNameDisplay 
                   id={request.staffId?.toString() || ''} 
+                  initialName={request.staffName}
                   showStaffNo={false}
                 />
               </span>
             </div>
+            
+            {request.reviewerName && (
+               <div className="flex justify-between">
+                <span className="text-muted-foreground">审核人</span>
+                <span className="font-medium">{request.reviewerName}</span>
+              </div>
+            )}
+
+            {request.reviewedAt && (
+               <div className="flex justify-between">
+                <span className="text-muted-foreground">审核时间</span>
+                <span className="font-medium text-sm">{format(new Date(request.reviewedAt), 'yyyy-MM-dd HH:mm')}</span>
+              </div>
+            )}
+
+            {request.remark && (
+              <div className="flex flex-col space-y-1 border-t border-border/50 pt-2">
+                <span className="text-muted-foreground">备注</span>
+                <span className="font-medium text-sm whitespace-pre-wrap">{request.remark}</span>
+              </div>
+            )}
+
             <div className="flex justify-between">
               <span className="text-muted-foreground">申请时间</span>
               <span className="font-medium text-sm">{request.createdAt ? format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm') : ''}</span>

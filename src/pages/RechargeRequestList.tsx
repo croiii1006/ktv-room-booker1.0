@@ -33,24 +33,55 @@ export default function RechargeRequestList() {
               onClick={() => setSelectedId(request.id?.toString() || '')}
               className="bg-card rounded-lg border border-border p-4 active:bg-accent transition-colors cursor-pointer animate-fade-in"
             >
-              <div className="flex items-start justify-between mb-2">
+              <div className="flex justify-between items-start mb-2">
                 <div>
                   <h3 className="font-semibold text-foreground">
-                    {request.customerName}
+                    {request.memberName || '无名'}
                   </h3>
-                  <p className="text-lg font-bold text-primary mt-1">
-                    ¥{request.amount.toLocaleString()}
-                  </p>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    单号: {request.applyNo}
+                  </div>
                 </div>
                 <RequestStatusBadge status={request.status || 'PENDING'} />
               </div>
-              {request.giftAmount > 0 && (
-                <p className="text-sm text-muted-foreground mb-2">
-                  赠送: ¥{request.giftAmount}
+
+              <div className="mb-2">
+                <p className="text-lg font-bold text-primary">
+                  ¥{request.amount?.toLocaleString()}
+                  {request.giftAmount && request.giftAmount > 0 ? (
+                    <span className="text-sm font-normal text-muted-foreground ml-2">
+                      (赠: ¥{request.giftAmount})
+                    </span>
+                  ) : null}
                 </p>
-              )}
-              <div className="text-xs text-muted-foreground">
-                {request.createdAt ? format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm') : ''}
+              </div>
+
+              <div className="text-sm text-muted-foreground space-y-1">
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  <span>门店: {request.storeName}</span>
+                  <span>业务员: {request.staffName}</span>
+                </div>
+                
+                {request.remark && (
+                  <div>备注: {request.remark}</div>
+                )}
+                
+                {request.status === 'REJECTED' && request.rejectReason && (
+                  <div className="text-destructive">
+                    拒绝原因: {request.rejectReason}
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center mt-2 pt-2 border-t border-border/50 text-xs">
+                  <span>
+                    {request.reviewerName ? `审核人: ${request.reviewerName}` : ''}
+                  </span>
+                  <span>
+                    {request.createdAt
+                      ? format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm')
+                      : ''}
+                  </span>
+                </div>
               </div>
             </div>
           ))
