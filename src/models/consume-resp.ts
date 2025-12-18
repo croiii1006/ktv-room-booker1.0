@@ -80,6 +80,12 @@ export interface ConsumeResp {
      */
     reservationId?: number;
     /**
+     * 预定日期
+     * @type {string}
+     * @memberof ConsumeResp
+     */
+    reserveDate?: string;
+    /**
      * 申请人/接待业务员ID
      * @type {number}
      * @memberof ConsumeResp
