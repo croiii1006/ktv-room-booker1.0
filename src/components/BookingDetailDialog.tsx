@@ -148,11 +148,11 @@ export function BookingDetailDialog({
 
     try {
       const res = await uploadFileMutation.mutateAsync(file);
-      if (res.code === 200 && res.data) {
-        setImageUrl(res.data);
+      if (res.data.code === 200 && res.data.data) {
+        setImageUrl(res.data.data);
         toast.success('凭证上传成功');
       } else {
-        toast.error(res.message || '上传失败');
+        toast.error(res.data.message || '上传失败');
       }
     } catch (err) {
       console.error(err);
