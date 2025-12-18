@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
+import { MemberNameDisplay } from '@/components/MemberNameDisplay';
+import { StaffNameDisplay } from '@/components/StaffNameDisplay';
 import { useMemberDetail } from '@/queries/member-queries';
 
 export default function CustomerDetail() {
