@@ -522,10 +522,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
         // Common data for all roles
-        await Promise.all([
-          fetchTeamMembers(),
-          fetchCardTypes()
-        ]);
+        await fetchCardTypes();
 
         // "My" lists are only for sales
         if (user?.role !== 'sales') {
