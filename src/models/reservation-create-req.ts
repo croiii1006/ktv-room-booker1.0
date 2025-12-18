@@ -50,6 +50,18 @@ export interface ReservationCreateReq {
      */
     reserveDate: string;
     /**
+     * 开始时间（当天分钟，0-1439），不传默认0
+     * @type {number}
+     * @memberof ReservationCreateReq
+     */
+    startMin?: number;
+    /**
+     * 结束时间（当天分钟，1-1440），不传默认1440
+     * @type {number}
+     * @memberof ReservationCreateReq
+     */
+    endMin?: number;
+    /**
      * 预计人数
      * @type {number}
      * @memberof ReservationCreateReq

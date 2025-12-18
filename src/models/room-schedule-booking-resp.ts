@@ -38,6 +38,18 @@ export interface RoomScheduleBookingResp {
      */
     reserveNo?: string;
     /**
+     * 开始时间（当天分钟，0-1439）
+     * @type {number}
+     * @memberof RoomScheduleBookingResp
+     */
+    startMin?: number;
+    /**
+     * 结束时间（当天分钟，1-1440）
+     * @type {number}
+     * @memberof RoomScheduleBookingResp
+     */
+    endMin?: number;
+    /**
      * 预订状态(PENDING/APPROVED)
      * @type {string}
      * @memberof RoomScheduleBookingResp

@@ -42,7 +42,7 @@ export interface ConsumeApplyCreateReq {
      * @type {number}
      * @memberof ConsumeApplyCreateReq
      */
-    reservationId?: number;
+    reservationId: number;
     /**
      * 申请人(接待业务员)ID
      * @type {number}
