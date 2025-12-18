@@ -19,6 +19,7 @@ import { useTeamMemberDetail, useTeamMemberReservations, useTeamMemberRecharges,
 import { useMemberList } from "@/queries/member-queries";
 import { useRoomSchedule } from "@/queries/common-queries";
 import { useReservationDetail } from "@/queries/reservation-queries";
+import { useConsumeDetail } from "@/queries/consume-queries";
 
 type DetailType = "customer" | "recharge" | "service" | "booking";
 
@@ -72,9 +73,16 @@ export default function TeamMemberDetail() {
   const getStaffName = (item: any) => {
      if (item.applyStaffName) return item.applyStaffName;
      if (item.salesName) return item.salesName;
-     // If the staffId matches the current member detail we are viewing
-     if (item.staffId === staffId) return member.name;
-     return item.staffId || '未知';
+     if (item.serviceStaffName) return item.serviceStaffName;
+     
+     // Check if any staff ID field matches the current member
+     const ids = [item.staffId, item.applyStaffId, item.receptionStaffId, item.salesStaffNo];
+     if (ids.some(id => id && Number(id) === Number(staffId))) {
+         return member.name;
+     }
+     
+     // Return the first available ID if name is not found
+     return item.staffId || item.applyStaffId || item.receptionStaffId || item.salesStaffNo || '未知';
   };
 
   const { data: rechargesData, isLoading: isLoadingRecharges } = useTeamMemberRecharges(staffId, 1, 100);
@@ -91,6 +99,10 @@ export default function TeamMemberDetail() {
   // Fetch booking detail if a booking is selected
   const selectedBookingId = selected?.type === 'booking' ? selected.data.id : 0;
   const { data: bookingDetailData, isLoading: isLoadingBookingDetail } = useReservationDetail(selectedBookingId);
+
+  // Fetch consume detail if a service is selected
+  const selectedConsumeId = selected?.type === 'service' ? selected.data.id : 0;
+  const { data: consumeDetailData, isLoading: isLoadingConsumeDetail } = useConsumeDetail(selectedConsumeId);
   
   if (isLoadingMember) {
      return (
@@ -265,17 +277,43 @@ export default function TeamMemberDetail() {
       );
     }
     if (selected.type === "service") {
+      // 如果正在加载详情，显示加载中
+      if (isLoadingConsumeDetail) {
+         return (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+         );
+      }
+      
+      // 优先使用详情接口返回的数据，否则使用列表数据
+      // 注意：consumeDetailData.data 是 ResultConsumeResp，consumeDetailData.data.data 才是 ConsumeResp
+      const detailItem = consumeDetailData?.data?.data || item;
+      
       // 消费确认记录
-      const formattedDate = item.bookingDate ? format(new Date(item.bookingDate), "yyyy年MM月dd日 EEEE", {
+      // 消费确认可能没有 bookingDate，但有 createdAt 或其他时间
+      // 从列表数据看，并没有 bookingDate，可能需要用 createdAt 或者 reviewedAt
+      // 详情接口也没有 bookingDate。但是有 updatedAt。
+      // 列表数据里有 createdAt: "2025-12-16 15:26:14"
+      // 详情接口里有 createdAt: "2025-12-16 15:26:14"
+      // 之前的代码用了 bookingDate，可能是旧的逻辑或者字段理解错误。
+      // 假设用 createdAt 作为日期显示，或者如果有预定关联，可能是预定日期。
+      // 这里先用 createdAt 格式化
+      
+      const formattedDate = detailItem.createdAt ? format(new Date(detailItem.createdAt), "yyyy年MM月dd日 EEEE", {
         locale: zhCN,
       }) : '-';
       
       return (
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
+            <span className="text-muted-foreground">消费单号</span>
+            <span className="font-medium text-xs">{detailItem.consumeNo}</span>
+          </div>
+          <div className="flex justify-between">
             <span className="text-muted-foreground">房间号</span>
             <span className="font-medium">
-              {getRoomInfo(item.roomId)}
+              {getRoomInfo(detailItem.roomId)}
             </span>
           </div>
           <div className="flex justify-between">
@@ -284,26 +322,44 @@ export default function TeamMemberDetail() {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">客户</span>
-            <span className="font-medium">{getCustomerName(item)}</span>
+            <span className="font-medium">{detailItem.memberName || getCustomerName(detailItem)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">服务业务员</span>
             <span className="font-medium">
-              {item.serviceStaffName || '未知'}
+              {detailItem.applyStaffName || detailItem.serviceStaffName || getStaffName(detailItem)}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">状态</span>
-            <RequestStatusBadge status={item.status || 'PENDING'} />
+            <span className="text-muted-foreground">消费金额</span>
+            <span className="font-medium text-primary">¥{detailItem.consumeAmount}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">申请时间</span>
-            <span className="font-medium text-xs">{item.createdAt ? format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm') : '-'}</span>
+            <span className="text-muted-foreground">本金扣除</span>
+            <span className="font-medium">¥{detailItem.useBalance}</span>
           </div>
-          {item.rejectReason && (
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">赠送金扣除</span>
+            <span className="font-medium">¥{detailItem.useGiftAmount}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">状态</span>
+            <RequestStatusBadge status={detailItem.status || 'PENDING'} />
+          </div>
+          {detailItem.remark && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">备注</span>
+              <span className="font-medium text-xs max-w-[200px] truncate">{detailItem.remark}</span>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">申请时间</span>
+            <span className="font-medium text-xs">{detailItem.createdAt ? format(new Date(detailItem.createdAt), 'yyyy-MM-dd HH:mm') : '-'}</span>
+          </div>
+          {detailItem.rejectReason && (
             <div>
               <p className="text-muted-foreground text-xs mb-1">驳回理由</p>
-              <p className="text-xs text-destructive">{item.rejectReason}</p>
+              <p className="text-xs text-destructive">{detailItem.rejectReason}</p>
             </div>
           )}
         </div>
@@ -484,17 +540,24 @@ export default function TeamMemberDetail() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h3 className="font-semibold text-foreground">
-                        服务 - {getCustomerName(request)}
+                        {getRoomInfo(request.roomId)} - {getCustomerName(request)}
                       </h3>
                       <p className="text-sm text-muted-foreground">
                         {request.bookingDate ? format(new Date(request.bookingDate), "MM/dd EEEE", {
                           locale: zhCN,
-                        }) : '-'}
+                        }) : (request.createdAt ? format(new Date(request.createdAt), "MM/dd EEEE", {
+                          locale: zhCN,
+                        }) : '-')}
                       </p>
                     </div>
                     <RequestStatusBadge status={request.status || 'PENDING'} />
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="flex justify-end items-center text-xs mt-2">
+                    <span className="font-bold text-primary">
+                      ¥{request.consumeAmount}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
                     {request.createdAt ? format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm') : '-'}
                   </div>
                 </div>
