@@ -40,11 +40,10 @@ export default function TeamManagement() {
 
     try {
       await addTeamMember({
-        staffNo: formData.username,
+        username: formData.username,
         name: formData.name,
         password: formData.password,
         phone: formData.phone,
-        role: 'sales', // Default role for team members added by leader
       });
       toast.success('业务员添加成功');
       setShowAddDialog(false);
@@ -139,10 +138,10 @@ export default function TeamManagement() {
           <div className="space-y-4 py-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                工号 <span className="text-destructive">*</span>
+                登录用户名 <span className="text-destructive">*</span>
               </label>
               <Input
-                placeholder="请输入业务员工号"
+                placeholder="请输入登录用户名"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               />
