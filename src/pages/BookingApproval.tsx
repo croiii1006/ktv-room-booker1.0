@@ -6,16 +6,24 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { BookingDetailDialog } from '@/components/BookingDetailDialog';
 import { StaffNameDisplay } from '@/components/StaffNameDisplay';
 import { useAuth } from '@/contexts/AuthContext';
-import { useData } from '@/contexts/DataContext';
+import { usePendingReservationList } from '@/queries/reservation-queries';
 
 export default function BookingApproval() {
   const { user } = useAuth();
-  const { bookings, rooms, teamMembers, isLoading } = useData();
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
 
-  const pendingOrders = bookings
-    .filter(b => b.status === 'pending')
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const { data: pendingData, isLoading } = usePendingReservationList(1, 100);
+  const pendingOrders = pendingData?.data?.data?.list || [];
+
+  const sortedOrders = [...pendingOrders].sort(
+    (a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+    }
+  );
+
+  const selectedOrder = pendingOrders.find(o => o.id?.toString() === selectedBookingId);
 
   return (
     <div className="min-h-screen bg-background">
@@ -26,28 +34,22 @@ export default function BookingApproval() {
             <div className="text-center py-12">
             <p className="text-muted-foreground">加载中...</p>
           </div>
-        ) : pendingOrders.length === 0 ? (
+        ) : sortedOrders.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">暂无待审核订单</p>
           </div>
         ) : (
-          pendingOrders.map((order) => {
-            const formattedDate = order.date ? format(new Date(order.date), 'MM/dd EEEE', {
+          sortedOrders.map((order) => {
+            const formattedDate = order.reserveDate ? format(new Date(order.reserveDate), 'MM/dd EEEE', {
               locale: zhCN,
             }) : '-';
 
-            // Resolve Room Info
-            const room = rooms.find(r => r.id === order.roomId);
-            const roomDisplay = room ? `${room.roomNo} - ${room.name}` : (order.roomId || '未知房间');
-
-            // Resolve Sales Name
-            const staff = teamMembers.find(t => t.id === order.salesId || t.staffNo === order.salesStaffNo);
-            const salesName = staff?.name || (order.salesName !== 'Unknown' ? order.salesName : '未知');
+            const roomDisplay = order.roomTypeName ? `${order.roomTypeName} ${order.roomNo}` : (order.roomNo || '未知房间');
 
             return (
               <div
                 key={order.id}
-                onClick={() => setSelectedBookingId(order.id)}
+                onClick={() => setSelectedBookingId(order.id?.toString() || '')}
                 className="bg-card rounded-lg border border-border p-4 active:bg-accent transition-colors cursor-pointer animate-fade-in"
               >
                 <div className="flex items-start justify-between mb-2">
@@ -59,11 +61,11 @@ export default function BookingApproval() {
                       {formattedDate}
                     </p>
                   </div>
-                  <StatusBadge status={order.status} />
+                  <StatusBadge status={order.status || 'PENDING'} />
                 </div>
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span>
-                    申请人: <StaffNameDisplay id={order.salesId} initialName={salesName} />
+                    申请人: <StaffNameDisplay id={order.staffId?.toString()} initialName={order.applyStaffName} showStaffNo />
                   </span>
                   {/* Deposit is not currently available in Booking model */}
                 </div>
@@ -81,6 +83,8 @@ export default function BookingApproval() {
         onOpenChange={(open) => !open && setSelectedBookingId(null)}
         bookingId={selectedBookingId}
         isReviewMode={true}
+        roomName={selectedOrder?.roomTypeName}
+        roomNo={selectedOrder?.roomNo}
       />
     </div>
   );

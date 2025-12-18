@@ -267,6 +267,8 @@ export default function RoomMatrix() {
           open={!!selectedCell}
           onClose={() => setSelectedCell(null)}
           roomId={selectedCell?.roomId || ''}
+          roomName={selectedCell ? rooms.find(r => r.id?.toString() === selectedCell.roomId)?.roomName || rooms.find(r => r.id?.toString() === selectedCell.roomId)?.roomNo || '' : ''}
+          roomPrice={selectedCell ? rooms.find(r => r.id?.toString() === selectedCell.roomId)?.price || 0 : 0}
           date={selectedCell?.date || ''}
           preselectedCustomerId={preselectedCustomerId}
         />
@@ -278,12 +280,15 @@ export default function RoomMatrix() {
           open={!!viewBookingId}
           onClose={() => setViewBookingId(null)}
           bookingId={viewBookingId || ''}
+          roomName={getRoomName(viewBookingRoomId)}
         />
       ) : (
         <BookingDetailDialog
           open={!!viewBookingId}
           onOpenChange={(open) => !open && setViewBookingId(null)}
           bookingId={viewBookingId || ''}
+          roomName={getRoomName(viewBookingRoomId)}
+          roomNo={getRoomNo(viewBookingRoomId)}
         />
       )}
     </div>

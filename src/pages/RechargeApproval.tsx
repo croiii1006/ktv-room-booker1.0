@@ -7,14 +7,9 @@ import { MemberNameDisplay } from '@/components/MemberNameDisplay';
 import { StaffNameDisplay } from '@/components/StaffNameDisplay';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePendingRechargeList } from '@/queries/recharge-queries';
-import { useData } from '@/contexts/DataContext';
 
 export default function RechargeApproval() {
   const { user } = useAuth();
-  const { teamMembers } = useData(); // Keep useData for teamMembers only if needed, or fetch them via query too?
-  // efficient to keep useData for teamMembers if it's already there, but strictly "prioritize queries" might mean fetching staff via query.
-  // teamMembers are fetched in DataContext. Let's stick to useData for shared resources like teamMembers for now to avoid over-fetching.
-  
   const { data: res, isLoading } = usePendingRechargeList(1, 100);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -35,15 +30,6 @@ export default function RechargeApproval() {
           </div>
         ) : (
           pendingRequests.map((request) => {
-            // Resolve Sales Name
-            // request from API has staffId. DataContext request had salesId.
-            // API: staffId (number). DataContext: salesId (string).
-            const staffId = request.staffId;
-            const staff = teamMembers.find(t => t.id === staffId?.toString() || t.staffNo === request.staffId?.toString()); // approximate matching
-            // Actually request.staffId is number. teamMembers.id is string.
-            
-            const salesName = staff?.name || (request.staffId ? `Staff #${request.staffId}` : '未知');
-
             return (
             <div
               key={request.id}
@@ -63,7 +49,7 @@ export default function RechargeApproval() {
               </div>
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span className="text-xs">单号: {request.applyNo || '-'}</span>
-                <span>申请人: <StaffNameDisplay id={request.staffId?.toString() || ''} initialName={salesName} /></span>
+                <span>申请人: <StaffNameDisplay id={request.staffId?.toString() || ''} showStaffNo /></span>
               </div>
               
               {(request.giftAmount !== undefined && request.giftAmount !== null) ? (

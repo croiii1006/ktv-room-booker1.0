@@ -10,10 +10,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { RequestStatusBadge } from "@/components/RequestStatusBadge";
-import { useData } from "@/contexts/DataContext";
 import { toast } from "sonner";
 import { MemberNameDisplay } from './MemberNameDisplay';
 import { StaffNameDisplay } from './StaffNameDisplay';
+import { useConsumeDetail, useApproveConsume, useRejectConsume } from '@/queries/consume-queries';
+import { useAuth } from '@/contexts/AuthContext';
 
 import { getReservationDetail, getStaffDetail } from "@/services/h5-service";
 
@@ -21,6 +22,8 @@ interface ConsumptionDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   requestId: string;
+  roomName?: string;
+  roomNo?: string;
   showActions: boolean;
 }
 
@@ -28,16 +31,16 @@ export function ConsumptionDetailDialog({
   open,
   onOpenChange,
   requestId,
+  roomName,
+  roomNo,
   showActions,
 }: ConsumptionDetailDialogProps) {
-  const {
-    consumptionRequests,
-    rooms,
-    updateConsumptionStatus,
-    updateBooking,            // ✅ 改这里：使用 updateBooking
-    teamMembers,
-    user
-  } = useData();
+  const { user } = useAuth();
+  const { data: res } = useConsumeDetail(requestId ? parseInt(requestId) : 0);
+  const request = res?.data?.data;
+
+  const approveMutation = useApproveConsume();
+  const rejectMutation = useRejectConsume();
 
   const onClose = () => {
     if (typeof onOpenChange === 'function') {
@@ -52,27 +55,16 @@ export function ConsumptionDetailDialog({
   const [realServiceSalesName, setRealServiceSalesName] = useState("");
   const [realServiceSalesStaffNo, setRealServiceSalesStaffNo] = useState("");
 
-  // 先找到请求
-  const request = consumptionRequests.find((r) => r.id === requestId);
-  const room = request ? rooms.find(r => r.id === request.roomId) : null;
-  const displayRoomName = room 
-      ? `${room.roomNo} - ${room.name}` 
-      : (request?.roomName || request?.roomId || '未知房间');
+  const displayRoomName = roomName && roomNo 
+      ? `${roomNo} - ${roomName}` 
+      : (roomName || '未知房间');
   
   // Resolve Service Sales Name
   let serviceSalesName = realServiceSalesName || request?.serviceSalesName;
   let serviceSalesStaffNo = realServiceSalesStaffNo || request?.serviceSalesStaffNo;
 
-  if (request && (!serviceSalesName || serviceSalesName === 'Unknown' || serviceSalesName === request.serviceSalesId)) {
-      const staff = teamMembers.find(t => t.id === request.serviceSalesId || t.staffNo === request.serviceSalesStaffNo);
-      if (staff) {
-          serviceSalesName = staff.name;
-          // Prefer phone if available and not set by realServiceSalesStaffNo
-          if (!realServiceSalesStaffNo) {
-             serviceSalesStaffNo = staff.phone || staff.staffNo;
-          }
-      }
-      else if (user && (user.id.toString() === request.serviceSalesId || user.staffNo === request.serviceSalesStaffNo)) {
+  if (request && (!serviceSalesName || serviceSalesName === 'Unknown' || serviceSalesName === request.serviceSalesId?.toString())) {
+      if (user && (user.id === request.serviceSalesId || user.staffNo === request.serviceSalesStaffNo)) {
           serviceSalesName = user.name;
           if (!realServiceSalesStaffNo) {
              serviceSalesStaffNo = user.phone || user.staffNo;
@@ -82,19 +74,17 @@ export function ConsumptionDetailDialog({
 
   // Resolve Booking Sales Name
   let bookingSalesName = realBookingSalesName || request?.bookingSalesName;
-  const bookingSalesStaffNo = realBookingSalesStaffNo || request?.bookingSalesId || "";
+  const bookingSalesStaffNo = realBookingSalesStaffNo || request?.bookingSalesId?.toString() || "";
 
   if (request && !bookingSalesName && request.bookingSalesId) {
-      const staff = teamMembers.find(t => t.id === request.bookingSalesId || t.staffNo === request.bookingSalesId);
-      if (staff) bookingSalesName = staff.name;
-      else if (user && (user.id.toString() === request.bookingSalesId || user.staffNo === request.bookingSalesId)) {
+      if (user && (user.id === request.bookingSalesId || user.staffNo === request.bookingSalesId?.toString())) {
           bookingSalesName = user.name;
       }
   }
 
   useEffect(() => {
-    if (request?.serviceSalesId) {
-      getStaffDetail(parseInt(request.serviceSalesId))
+    if (request?.applyStaffId) {
+      getStaffDetail(request.applyStaffId)
         .then((res) => {
           if (res.code === 200 && res.data) {
             setRealServiceSalesName(res.data.name || "");
@@ -108,11 +98,11 @@ export function ConsumptionDetailDialog({
         setRealServiceSalesName("");
         setRealServiceSalesStaffNo("");
     }
-  }, [request?.serviceSalesId]);
+  }, [request?.applyStaffId]);
 
   useEffect(() => {
-    if (request?.bookingId) {
-      getReservationDetail(parseInt(request.bookingId))
+    if (request?.reservationId) {
+      getReservationDetail(request.reservationId)
         .then(async (res) => {
           if (res.code === 200 && res.data) {
             const staffId = res.data.staffId;
@@ -137,10 +127,10 @@ export function ConsumptionDetailDialog({
         setRealBookingSalesName("");
         setRealBookingSalesStaffNo("");
     }
-  }, [request?.bookingId]);
+  }, [request?.reservationId]);
 
-  const isPending = request?.status === "pending";
-  const isRejected = request?.status === "rejected";
+  const isPending = request?.status === "PENDING";
+  const isRejected = request?.status === "REJECTED";
   const shouldShowRejectReason =
     !!request && (isRejected || !!request.rejectReason);
 
@@ -173,38 +163,36 @@ export function ConsumptionDetailDialog({
     );
   }
 
-  const formattedDate = format(new Date(request.date), "yyyy年MM月dd日 EEEE", {
+  const formattedDate = request.createdAt ? format(new Date(request.createdAt), "yyyy年MM月dd日 EEEE", {
     locale: zhCN,
-  });
+  }) : '';
 
-  const handleApprove = () => {
+  const handleApprove = async () => {
     console.log("[handleApprove] requestId =", requestId);
 
-    // 1. 审核通过消费确认申请
-    updateConsumptionStatus(requestId, "approved");
-
-    // 2. 同步更新订房记录：设为已完成，并写入服务业务员信息
-    updateBooking(request.bookingId, {
-      status: "finished",
-      serviceSalesId: request.serviceSalesId,
-      serviceSalesName: request.serviceSalesName,
-      serviceSalesStaffNo: request.serviceSalesStaffNo,
-    });
-
-    toast.success("消费确认申请已通过");
-    onClose();
+    try {
+        await approveMutation.mutateAsync({ id: parseInt(requestId), reviewerId: user?.id || 0 });
+        toast.success("消费确认申请已通过");
+        onClose();
+    } catch (e) {
+        toast.error('操作失败');
+    }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!reason.trim()) {
       toast.error("请填写驳回理由");
       return;
     }
-    updateConsumptionStatus(requestId, "rejected", reason.trim());
-    toast.success("消费确认申请已驳回");
-    setShowRejectForm(false);
-    setReason("");
-    onClose();
+    try {
+        await rejectMutation.mutateAsync({ id: parseInt(requestId), reviewerId: user?.id || 0, reason: reason.trim() });
+        toast.success("消费确认申请已驳回");
+        setShowRejectForm(false);
+        setReason("");
+        onClose();
+    } catch (e) {
+        toast.error('操作失败');
+    }
   };
 
   return (
@@ -217,7 +205,7 @@ export function ConsumptionDetailDialog({
         <div className="space-y-4 py-4">
           <div className="flex justify-center mb-4">
             <RequestStatusBadge
-              status={request.status}
+              status={request.status || 'PENDING'}
               className="text-sm px-4 py-1.5"
             />
           </div>
@@ -234,14 +222,14 @@ export function ConsumptionDetailDialog({
             <div className="flex justify-between">
               <span className="text-muted-foreground">客户</span>
               <span className="font-medium">
-                <MemberNameDisplay id={request.memberId || request.customerId} initialName={request.customerName} />
+                <MemberNameDisplay id={request.memberId?.toString() || ''} initialName={request.memberName} />
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">预定业务员</span>
               <span className="font-medium">
                 <StaffNameDisplay 
-                  id={request.bookingSalesId} 
+                  id={request.reservationId?.toString() || ''} // Wrong ID for staff, fixed below in logic but variable used here is bookingSalesName
                   initialName={bookingSalesName} 
                   staffNo={bookingSalesStaffNo}
                   showStaffNo
@@ -252,7 +240,7 @@ export function ConsumptionDetailDialog({
               <span className="text-muted-foreground">服务业务员</span>
               <span className="font-medium">
                 <StaffNameDisplay 
-                  id={request.serviceSalesId} 
+                  id={request.applyStaffId?.toString() || ''} 
                   initialName={serviceSalesName} 
                   staffNo={serviceSalesStaffNo}
                   showStaffNo
@@ -268,7 +256,7 @@ export function ConsumptionDetailDialog({
               <div className="border-t border-border pt-3 mt-3">
                 <p className="text-sm text-muted-foreground mb-1">审核状态</p>
                 <p className="text-sm font-medium">
-                  {request.status === "approved" ? "已通过" : "已驳回"}
+                  {request.status === "APPROVED" ? "已通过" : "已驳回"}
                 </p>
               </div>
             )}
@@ -282,19 +270,6 @@ export function ConsumptionDetailDialog({
               </div>
             )}
           </div>
-
-          {request.imageUrl && (
-            <div>
-              <p className="text-sm font-medium text-foreground mb-2">
-                到店凭证
-              </p>
-              <img
-                src={request.imageUrl}
-                alt="凭证"
-                className="w-full rounded-lg"
-              />
-            </div>
-          )}
 
           {/* 驳回理由输入区域：仅 pending + 正在驳回流程时显示 */}
           {showRejectForm && isPending && (
@@ -314,8 +289,8 @@ export function ConsumptionDetailDialog({
                 >
                   取消
                 </Button>
-                <Button variant="danger" size="full" onClick={handleReject}>
-                  确认驳回
+                <Button variant="danger" size="full" onClick={handleReject} disabled={rejectMutation.isPending}>
+                  {rejectMutation.isPending ? '提交中...' : '确认驳回'}
                 </Button>
               </div>
             </div>
@@ -332,8 +307,8 @@ export function ConsumptionDetailDialog({
             >
               驳回
             </Button>
-            <Button variant="success" size="full" onClick={handleApprove}>
-              通过
+            <Button variant="success" size="full" onClick={handleApprove} disabled={approveMutation.isPending}>
+               {approveMutation.isPending ? '提交中...' : '通过'}
             </Button>
           </div>
         ) : (

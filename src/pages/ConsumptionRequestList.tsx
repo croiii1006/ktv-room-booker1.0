@@ -62,8 +62,10 @@ export default function ConsumptionRequestList() {
 
       <ConsumptionDetailDialog
         open={!!selectedId}
-        onClose={() => setSelectedId(null)}
+        onOpenChange={(open) => !open && setSelectedId(null)}
         requestId={selectedId || ''}
+        roomName={requests.find(r => r.id?.toString() === selectedId)?.roomTypeName}
+        roomNo={requests.find(r => r.id?.toString() === selectedId)?.roomNo}
         showActions={false}
       />
     </div>

@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { BookingDialog } from '@/components/BookingDialog';
 import { BookingDetailDialog } from '@/components/BookingDetailDialog';
 import { useReservationList } from '@/queries/reservation-queries';
 import { format } from 'date-fns';
 
 export default function OrderList() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
-  const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
 
   // Map tab to API status param (if backend supports it, otherwise filter client side)
@@ -106,16 +106,11 @@ export default function OrderList() {
         <Button 
           variant="mobileAction" 
           size="full"
-          onClick={() => setIsBookingOpen(true)}
+          onClick={() => navigate('/rooms')}
         >
           新增预定
         </Button>
       </div>
-
-      <BookingDialog 
-        open={isBookingOpen} 
-        onOpenChange={setIsBookingOpen}
-      />
 
       <BookingDetailDialog
         bookingId={selectedBookingId}

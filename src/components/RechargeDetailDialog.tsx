@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { RequestStatusBadge } from '@/components/RequestStatusBadge';
-import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { MemberNameDisplay } from './MemberNameDisplay';
 import { StaffNameDisplay } from './StaffNameDisplay';
@@ -28,7 +28,7 @@ export function RechargeDetailDialog({
   requestId,
   showActions,
 }: RechargeDetailDialogProps) {
-  const { teamMembers, user } = useData();
+  const { user } = useAuth();
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [reason, setReason] = useState('');
 
@@ -41,19 +41,6 @@ export function RechargeDetailDialog({
   if (!open) return null;
   if (isLoading) return null; // Or show loading state
   if (!request) return null;
-
-  // Resolve Sales Name
-  // API returns staffId
-  const staffId = request.staffId;
-  let salesName = 'Unknown';
-  
-  const staff = teamMembers.find(t => t.id === staffId?.toString() || t.staffNo === staffId?.toString());
-  if (staff) salesName = staff.name;
-  else if (user && (user.id === staffId || user.staffNo === staffId?.toString())) {
-      salesName = user.name;
-  } else if (request.staffId) {
-      salesName = `Staff #${request.staffId}`;
-  }
 
   const handleApprove = async () => {
     try {
@@ -125,8 +112,6 @@ export function RechargeDetailDialog({
               <span className="font-medium">
                 <StaffNameDisplay 
                   id={request.staffId?.toString() || ''} 
-                  initialName={salesName} 
-                  // staffNo={request.salesStaffNo} // Not in API response
                   showStaffNo={false}
                 />
               </span>

@@ -16,13 +16,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
-import { useData } from '@/contexts/DataContext';
 import { toast } from 'sonner';
+import { useMemberList } from '@/queries/member-queries';
+import { useCreateReservation } from '@/queries/reservation-queries';
 
 interface BookingDialogProps {
   open: boolean;
   onClose: () => void;
   roomId: string;
+  roomName: string;
+  roomPrice: number;
   date: string;
   preselectedCustomerId?: string;
 }
@@ -31,15 +34,19 @@ export function BookingDialog({
   open,
   onClose,
   roomId,
+  roomName,
+  roomPrice,
   date,
   preselectedCustomerId,
 }: BookingDialogProps) {
   const { user } = useAuth();
-  const { rooms, customers, addBooking, getCustomersByStaff } = useData();
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
 
-  const room = rooms.find((r) => r.id === roomId);
-  const availableCustomers = user ? getCustomersByStaff(user.staffNo, user.role) : [];
+  // Fetch customers directly
+  const { data: memberData } = useMemberList(1, 100);
+  const customers = memberData?.data?.list || [];
+  
+  const createReservationMutation = useCreateReservation();
 
   useEffect(() => {
     if (open && preselectedCustomerId) {
@@ -49,36 +56,36 @@ export function BookingDialog({
     }
   }, [open, preselectedCustomerId]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedCustomerId) {
       toast.error('请选择客户');
       return;
     }
 
-    const customer = customers.find((c) => c.id === selectedCustomerId);
+    const customer = customers.find((c) => c.id?.toString() === selectedCustomerId);
     if (!customer) {
       toast.error('客户不存在');
       return;
     }
 
-    // Salesperson always creates pending bookings
-    addBooking({
-      roomId,
-      date,
-      customerId: selectedCustomerId,
-      customerName: customer.name,
-      price: room?.price || 0,
-      status: 'pending',
-      salesId: user?.id.toString() || '',
-      salesName: user?.name || '',
-      salesStaffNo: user?.staffNo || '',
-    });
-
-    toast.success('申请已提交，等待队长审核');
-    onClose();
+    try {
+      await createReservationMutation.mutateAsync({
+        storeId: customer.storeId || 1, // Fallback to 1 or user store
+        roomId: parseInt(roomId),
+        memberId: parseInt(selectedCustomerId),
+        staffId: user?.id || 0,
+        reserveDate: date,
+        guestCount: 1,
+        remark: ''
+      });
+      
+      toast.success('申请已提交，等待队长审核');
+      onClose();
+    } catch (error) {
+      toast.error('提交失败');
+      console.error(error);
+    }
   };
-
-  if (!room) return null;
 
   const formattedDate = date
     ? format(new Date(date), 'yyyy年MM月dd日 EEEE', { locale: zhCN })
@@ -95,7 +102,7 @@ export function BookingDialog({
           <div className="bg-secondary/50 rounded-lg p-4 space-y-2">
             <div className="flex justify-between">
               <span className="text-muted-foreground">房号</span>
-              <span className="font-medium">{room.name}</span>
+              <span className="font-medium">{roomName}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">预定日期</span>
@@ -103,7 +110,7 @@ export function BookingDialog({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">价格</span>
-              <span className="font-medium text-primary">¥{room.price}</span>
+              <span className="font-medium text-primary">¥{roomPrice}</span>
             </div>
           </div>
 
@@ -116,8 +123,8 @@ export function BookingDialog({
                 <SelectValue placeholder="请选择客户" />
               </SelectTrigger>
               <SelectContent>
-                {availableCustomers.map((customer) => (
-                  <SelectItem key={customer.id} value={customer.id}>
+                {customers.map((customer) => (
+                  <SelectItem key={customer.id} value={customer.id?.toString() || ''}>
                     {customer.name} (余额: ¥{customer.balance})
                   </SelectItem>
                 ))}
@@ -137,8 +144,8 @@ export function BookingDialog({
           <Button variant="mobileSecondary" size="full" onClick={onClose}>
             取消
           </Button>
-          <Button variant="mobileAction" size="full" onClick={handleSubmit}>
-            提交申请
+          <Button variant="mobileAction" size="full" onClick={handleSubmit} disabled={createReservationMutation.isPending}>
+            {createReservationMutation.isPending ? '提交中...' : '提交申请'}
           </Button>
         </div>
       </DialogContent>
