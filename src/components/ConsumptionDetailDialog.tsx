@@ -49,6 +49,8 @@ export function ConsumptionDetailDialog({
   const [reason, setReason] = useState("");
   const [realBookingSalesName, setRealBookingSalesName] = useState("");
   const [realBookingSalesStaffNo, setRealBookingSalesStaffNo] = useState("");
+  const [realServiceSalesName, setRealServiceSalesName] = useState("");
+  const [realServiceSalesStaffNo, setRealServiceSalesStaffNo] = useState("");
 
   // 先找到请求
   const request = consumptionRequests.find((r) => r.id === requestId);
@@ -58,12 +60,23 @@ export function ConsumptionDetailDialog({
       : (request?.roomName || request?.roomId || '未知房间');
   
   // Resolve Service Sales Name
-  let serviceSalesName = request?.serviceSalesName;
+  let serviceSalesName = realServiceSalesName || request?.serviceSalesName;
+  let serviceSalesStaffNo = realServiceSalesStaffNo || request?.serviceSalesStaffNo;
+
   if (request && (!serviceSalesName || serviceSalesName === 'Unknown' || serviceSalesName === request.serviceSalesId)) {
       const staff = teamMembers.find(t => t.id === request.serviceSalesId || t.staffNo === request.serviceSalesStaffNo);
-      if (staff) serviceSalesName = staff.name;
+      if (staff) {
+          serviceSalesName = staff.name;
+          // Prefer phone if available and not set by realServiceSalesStaffNo
+          if (!realServiceSalesStaffNo) {
+             serviceSalesStaffNo = staff.phone || staff.staffNo;
+          }
+      }
       else if (user && (user.id.toString() === request.serviceSalesId || user.staffNo === request.serviceSalesStaffNo)) {
           serviceSalesName = user.name;
+          if (!realServiceSalesStaffNo) {
+             serviceSalesStaffNo = user.phone || user.staffNo;
+          }
       }
   }
 
@@ -78,6 +91,24 @@ export function ConsumptionDetailDialog({
           bookingSalesName = user.name;
       }
   }
+
+  useEffect(() => {
+    if (request?.serviceSalesId) {
+      getStaffDetail(parseInt(request.serviceSalesId))
+        .then((res) => {
+          if (res.code === 200 && res.data) {
+            setRealServiceSalesName(res.data.name || "");
+            setRealServiceSalesStaffNo(res.data.phone || res.data.staffNo);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to fetch service staff detail", err);
+        });
+    } else {
+        setRealServiceSalesName("");
+        setRealServiceSalesStaffNo("");
+    }
+  }, [request?.serviceSalesId]);
 
   useEffect(() => {
     if (request?.bookingId) {
@@ -223,7 +254,7 @@ export function ConsumptionDetailDialog({
                 <StaffNameDisplay 
                   id={request.serviceSalesId} 
                   initialName={serviceSalesName} 
-                  staffNo={request.serviceSalesStaffNo}
+                  staffNo={serviceSalesStaffNo}
                   showStaffNo
                 />
               </span>
