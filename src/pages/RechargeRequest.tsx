@@ -20,7 +20,7 @@ export default function RechargeRequest() {
   const { mutateAsync: uploadFile, isPending: isUploading } = useUploadFile();
   const { data: customerData, isLoading: isLoadingCustomer } = useMemberDetail(parseInt(id || '0'));
 
-  const customer = customerData?.data;
+  const customer = customerData?.data?.data;
 
   const [amount, setAmount] = useState('');
   const [giftAmount, setGiftAmount] = useState('');
@@ -73,12 +73,19 @@ export default function RechargeRequest() {
       return;
     }
 
+    if (!user?.storeId) {
+      toast.error('当前账号未绑定门店，无法操作');
+      return;
+    }
+
     try {
       await createRecharge({
-        customerId: customer.id,
+        memberId: customer.id,
+        storeId: user.storeId,
+        staffId: user.id,
         amount: parseFloat(amount),
         giftAmount: giftAmount ? parseFloat(giftAmount) : 0,
-        imageUrl: imageUrl || undefined,
+        voucherUrls: imageUrl ? [imageUrl] : [],
         remark: remark,
       });
       toast.success('充值申请提交成功');
