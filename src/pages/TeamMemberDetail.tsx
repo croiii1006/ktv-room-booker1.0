@@ -36,7 +36,8 @@ export default function TeamMemberDetail() {
   const staffId = parseInt(id || '0');
   
   const { data: memberDetail, isLoading: isLoadingMember } = useTeamMemberDetail(staffId);
-  const member = memberDetail?.data;
+  // memberDetail.data.data is H5TeamStaffResp
+  const member = memberDetail?.data?.data;
 
   // We need to fetch lists for this specific staff member
   // Note: member-queries typically fetch "my members". If we need "members by staff", we might need a new query or filter.
@@ -85,7 +86,7 @@ export default function TeamMemberDetail() {
      
      if (matchedId) {
        // First try to find in loaded staff list
-       const staff = allStaffs.find((s: any) => s.id === matchedId);
+       const staff = allStaffs.find((s: any) => s.id === Number(matchedId));
        if (staff) return staff.name;
        
        // Fallback to current member if ID matches
@@ -398,22 +399,28 @@ export default function TeamMemberDetail() {
              <div>
                 <h2 className="text-xl font-bold text-foreground">{member.name}</h2>
                 <p className="text-sm text-muted-foreground">手机: {member.phone}</p>
-                <p className="text-xs text-muted-foreground mt-1">ID: {member.id}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-muted-foreground">ID: {member.id}</span>
+                  <span className="text-xs text-muted-foreground">门店: {member.storeName || member.storeId}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                   <span className="text-xs text-muted-foreground">加入时间: {member.createdAt ? format(new Date(member.createdAt), 'yyyy-MM-dd') : '-'}</span>
+                </div>
              </div>
           </div>
         </div>
 
         {/* Tabs */}
-          <Tabs defaultValue="customers" className="w-full">
-            <TabsList className="w-full grid grid-cols-4">
-              <TabsTrigger value="customers">客户名单</TabsTrigger>
+          <Tabs defaultValue="recharge" className="w-full">
+            <TabsList className="w-full grid grid-cols-3">
+              {/* <TabsTrigger value="customers">客户名单</TabsTrigger> */}
               <TabsTrigger value="recharge">充值记录</TabsTrigger>
               <TabsTrigger value="booking">预定记录</TabsTrigger>
               <TabsTrigger value="service">服务记录</TabsTrigger>
             </TabsList>
 
           {/* 客户名单 */}
-          <TabsContent value="customers" className="mt-4 space-y-3">
+          {/* <TabsContent value="customers" className="mt-4 space-y-3">
             {customers.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">暂无客户</p>
             ) : (
@@ -446,7 +453,7 @@ export default function TeamMemberDetail() {
                 </div>
               ))
             )}
-          </TabsContent>
+          </TabsContent> */}
 
           {/* 充值记录 */}
           <TabsContent value="recharge" className="mt-4 space-y-3">
