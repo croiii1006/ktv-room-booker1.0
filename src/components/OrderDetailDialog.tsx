@@ -132,8 +132,12 @@ export function OrderDetailDialog({
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">价格</span>
+              <span className="text-muted-foreground">房间价格</span>
               <span className="font-medium text-primary">¥{booking.price ?? 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">消费总金额（含房间）</span>
+              <span className="font-medium text-primary">¥{(booking.price || 0) + (booking.actualConsumeAmount || 0)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">申请人</span>

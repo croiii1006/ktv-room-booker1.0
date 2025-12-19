@@ -140,6 +140,14 @@ export interface ReservationResp {
      */
     price?: number;
     /**
+     * 消费申请状态（NONE/PENDING/APPROVED/REJECTED）
+     */
+    consumeApplyStatus?: string;
+    /**
+     * 实际消费金额（仅消费审核通过才有，否则为0）
+     */
+    actualConsumeAmount?: number;
+    /**
      * 预计人数
      * @type {number}
      * @memberof ReservationResp
