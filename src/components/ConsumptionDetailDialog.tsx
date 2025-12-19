@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import { Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -36,7 +37,7 @@ export function ConsumptionDetailDialog({
   showActions,
 }: ConsumptionDetailDialogProps) {
   const { user } = useAuth();
-  const { data: res } = useConsumeDetail(requestId || '');
+  const { data: res, isLoading } = useConsumeDetail(requestId || '');
   const request = res?.data?.data;
 
   const approveMutation = useApproveConsume();
@@ -95,6 +96,17 @@ export function ConsumptionDetailDialog({
       setReason("");
     }
   }, [isPending, requestId]);
+
+  if (isLoading) {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-sm mx-4 rounded-xl flex justify-center py-12" aria-describedby={undefined}>
+            <DialogTitle className="sr-only">加载中</DialogTitle>
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   // request 不存在时
   if (!request) {
@@ -223,6 +235,22 @@ export function ConsumptionDetailDialog({
               <div className="flex justify-between">
                 <span className="text-muted-foreground">使用赠送金</span>
                 <span className="font-medium">¥{request.useGiftAmount}</span>
+              </div>
+            )}
+            {request.voucherUrls && request.voucherUrls.length > 0 && (
+              <div className="space-y-2">
+                <span className="text-muted-foreground text-sm">凭证图片</span>
+                <div className="grid grid-cols-3 gap-2">
+                  {request.voucherUrls.map((url: string, index: number) => (
+                    <div 
+                      key={index} 
+                      className="relative aspect-square rounded-lg overflow-hidden border border-border cursor-pointer bg-black/5"
+                      onClick={() => window.open(url, '_blank')}
+                    >
+                       <img src={url} alt={`凭证-${index + 1}`} className="object-cover w-full h-full" />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             {request.remark && (

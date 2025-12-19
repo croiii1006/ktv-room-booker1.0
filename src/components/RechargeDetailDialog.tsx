@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
+import { Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -39,7 +40,16 @@ export function RechargeDetailDialog({
   const rejectMutation = useRejectRecharge();
 
   if (!open) return null;
-  if (isLoading) return null; // Or show loading state
+  if (isLoading) {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-sm mx-4 rounded-xl flex justify-center py-12" aria-describedby={undefined}>
+            <DialogTitle className="sr-only">加载中</DialogTitle>
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </DialogContent>
+      </Dialog>
+    );
+  }
   if (!request) return null;
 
   const handleApprove = async () => {

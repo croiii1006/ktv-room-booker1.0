@@ -146,6 +146,12 @@ export interface ConsumeResp {
      */
     remark?: string;
     /**
+     * 凭证图片
+     * @type {Array<string>}
+     * @memberof ConsumeResp
+     */
+    voucherUrls?: Array<string>;
+    /**
      * 创建时间
      * @type {string}
      * @memberof ConsumeResp
