@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           };
           setUser(userData);
           localStorage.setItem('ktv_user', JSON.stringify(userData));
-          toast.success('登录成功');
+          // toast.success('登录成功'); // Removed to avoid duplicate toast with Login.tsx
           setLoading(false);
           return true;
         } else {

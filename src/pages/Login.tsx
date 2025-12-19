@@ -61,10 +61,10 @@ export default function Login() {
         toast.success('登录成功');
         navigate('/home');
       } else {
-        toast.error('账号或密码错误');
+        // toast.error('账号或密码错误'); // AuthContext already handles error toasts
       }
     } catch (error) {
-      toast.error('登录失败，请检查网络');
+      // toast.error('登录失败，请检查网络'); // AuthContext already handles error toasts
     } finally {
       setLoading(false);
     }
