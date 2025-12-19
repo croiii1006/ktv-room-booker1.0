@@ -43,7 +43,7 @@ export function RechargeDetailDialog({
   if (isLoading) {
     return (
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-sm mx-4 rounded-xl flex justify-center py-12" aria-describedby={undefined}>
+        <DialogContent className="max-w-sm rounded-xl flex justify-center py-12" aria-describedby={undefined}>
             <DialogTitle className="sr-only">加载中</DialogTitle>
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </DialogContent>
@@ -80,7 +80,7 @@ export function RechargeDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm mx-4 rounded-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-sm rounded-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>充值申请详情</DialogTitle>
         </DialogHeader>

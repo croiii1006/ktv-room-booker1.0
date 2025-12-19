@@ -111,7 +111,7 @@ export function BookingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm mx-4 rounded-xl">
+      <DialogContent className="max-w-sm rounded-xl">
         <DialogHeader>
           <DialogTitle>预定房间</DialogTitle>
         </DialogHeader>

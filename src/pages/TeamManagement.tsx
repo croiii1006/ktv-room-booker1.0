@@ -130,7 +130,7 @@ export default function TeamManagement() {
 
       {/* Add Member Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-sm mx-4 rounded-xl">
+        <DialogContent className="max-w-sm rounded-xl">
           <DialogHeader>
             <DialogTitle>新增业务员</DialogTitle>
           </DialogHeader>

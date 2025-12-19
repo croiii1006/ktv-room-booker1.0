@@ -102,7 +102,7 @@ export function OrderDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm mx-4 rounded-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-sm rounded-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>订单详情</DialogTitle>
         </DialogHeader>
