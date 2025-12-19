@@ -175,6 +175,10 @@ export function LeaderBookingDetailDialog({
               <span className="font-medium">{formattedDate}</span>
             </div>
             <div className="flex justify-between">
+               <span className="text-muted-foreground">人数</span>
+               <span className="font-medium">{booking.guestCount ? `${booking.guestCount}人` : '-'}</span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-muted-foreground">客户</span>
               <span className="font-medium">
                 <MemberNameDisplay id={booking.memberId?.toString()} initialName={booking.memberName} />

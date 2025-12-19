@@ -15,6 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useMemberList } from '@/queries/member-queries';
@@ -45,6 +47,8 @@ export function BookingDialog({
 }: BookingDialogProps) {
   const { user } = useAuth();
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [guestCount, setGuestCount] = useState<string>('1');
+  const [remark, setRemark] = useState('');
 
   // Fetch customers directly
   const { data: memberData } = useMemberList(1, 100, undefined, { enabled: open });
@@ -59,6 +63,8 @@ export function BookingDialog({
     } else if (open) {
       setSelectedCustomerId('');
     }
+    setGuestCount('1');
+    setRemark('');
   }, [open, preselectedCustomerId]);
 
   const handleSubmit = async () => {
@@ -80,8 +86,8 @@ export function BookingDialog({
         memberId: parseInt(selectedCustomerId),
         staffId: user?.id || 0,
         reserveDate: date,
-        guestCount: 1,
-        remark: ''
+        guestCount: parseInt(guestCount) || 1,
+        remark: remark
       });
       
       toast.success('申请已提交，等待队长审核');
@@ -152,6 +158,31 @@ export function BookingDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              预计人数
+            </label>
+            <Input
+              type="number"
+              min={1}
+              value={guestCount}
+              onChange={(e) => setGuestCount(e.target.value)}
+              placeholder="请输入预计人数"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              备注
+            </label>
+            <Textarea
+              value={remark}
+              onChange={(e) => setRemark(e.target.value)}
+              placeholder="请输入备注信息（选填）"
+              rows={3}
+            />
           </div>
 
           {/* Sales Info */}
