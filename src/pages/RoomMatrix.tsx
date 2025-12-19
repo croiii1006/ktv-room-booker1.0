@@ -40,6 +40,7 @@ export default function RoomMatrix() {
   const [viewBookingId, setViewBookingId] = useState<string | null>(null);
   const [viewBookingRoomId, setViewBookingRoomId] = useState<string | null>(null);
   const [viewBookingState, setViewBookingState] = useState<string | null>(null);
+  const [viewConsumeApplyStatus, setViewConsumeApplyStatus] = useState<string | null>(null);
   const [selectedStoreId, setSelectedStoreId] = useState('');
   const [weekOffset, setWeekOffset] = useState(0);
 
@@ -99,6 +100,7 @@ export default function RoomMatrix() {
       setViewBookingId(booking.reservationId?.toString() || '');
       setViewBookingRoomId(roomId);
       setViewBookingState(booking.state || booking.status || null);
+      setViewConsumeApplyStatus(booking.consumeApplyStatus || null);
     } else if (!isLeader) {
       // Only salesperson can create bookings
       setSelectedCell({ roomId, date });
@@ -107,6 +109,7 @@ export default function RoomMatrix() {
       setViewBookingId(`free_${roomId}_${date}`);
       setViewBookingRoomId(roomId);
       setViewBookingState(null);
+      setViewConsumeApplyStatus(null);
     }
   };
 
@@ -322,6 +325,7 @@ export default function RoomMatrix() {
             setViewBookingId(null);
             setViewBookingRoomId(null);
             setViewBookingState(null);
+            setViewConsumeApplyStatus(null);
           }}
           bookingId={viewBookingId || ''}
           roomName={resolveRoomName(viewBookingRoomId)}
@@ -336,6 +340,7 @@ export default function RoomMatrix() {
               setViewBookingId(null);
               setViewBookingRoomId(null);
               setViewBookingState(null);
+              setViewConsumeApplyStatus(null);
             }
           }}
           bookingId={viewBookingId || ''}
@@ -343,6 +348,7 @@ export default function RoomMatrix() {
           roomNo={getRoomNo(viewBookingRoomId)}
           roomType={getRoomType(viewBookingRoomId)}
           bookingState={viewBookingState || undefined}
+          consumeApplyStatus={viewConsumeApplyStatus || undefined}
         />
       )}
     </div>
