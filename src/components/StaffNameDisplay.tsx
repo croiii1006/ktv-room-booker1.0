@@ -22,10 +22,10 @@ export const StaffNameDisplay: React.FC<StaffNameDisplayProps> = ({
   // Try to use initial name if valid
   const isValidInitialName = initialName && initialName !== 'Unknown' && initialName !== '未知';
   
-  const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
-  const isValidId = !isNaN(numericId || 0) && (numericId || 0) > 0;
+  const strId = id?.toString() || '';
+  const isValidId = !!strId && strId !== '0';
   
-  const { data, isLoading } = useLookupStaff(numericId || 0);
+  const { data, isLoading } = useLookupStaff(strId);
 
   // If we have an initial name, we can show it, but if showStaffNo is true and we don't have it, we might still want to fetch?
   // For simplicity, if we have initial name, we use it. If showStaffNo is needed, the caller should usually provide it if available.

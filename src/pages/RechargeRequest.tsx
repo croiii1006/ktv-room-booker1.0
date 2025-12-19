@@ -18,7 +18,7 @@ export default function RechargeRequest() {
   
   const { mutateAsync: createRecharge, isPending: isSubmitting } = useCreateRecharge();
   const { mutateAsync: uploadFile, isPending: isUploading } = useUploadFile();
-  const { data: customerData, isLoading: isLoadingCustomer } = useMemberDetail(parseInt(id || '0'));
+  const { data: customerData, isLoading: isLoadingCustomer } = useMemberDetail(id || '');
 
   const customer = customerData?.data?.data;
 

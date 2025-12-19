@@ -20,10 +20,10 @@ export const MemberNameDisplay: React.FC<MemberNameDisplayProps> = ({
   
   // Always call hook unconditionally, but control enabled state
   // Convert ID to number safely
-  const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
-  const isValidId = !isNaN(numericId || 0) && (numericId || 0) > 0;
+  const strId = id?.toString() || '';
+  const isValidId = !!strId && strId !== '0';
   
-  const { data, isLoading } = useLookupMember(numericId || 0, { 
+  const { data, isLoading } = useLookupMember(strId, { 
     enabled: !isValidInitialName && isValidId 
   });
 

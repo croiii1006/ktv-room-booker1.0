@@ -81,10 +81,10 @@ export function BookingDialog({
 
     try {
       await createReservationMutation.mutateAsync({
-        storeId: customer.storeId || 1, // Fallback to 1 or user store
-        roomId: parseInt(roomId),
-        memberId: parseInt(selectedCustomerId),
-        staffId: user?.id || 0,
+        storeId: customer.storeId?.toString() || '1', // Fallback to 1 or user store
+        roomId: roomId,
+        memberId: selectedCustomerId,
+        staffId: user?.id?.toString() || '',
         reserveDate: date,
         guestCount: parseInt(guestCount) || 1,
         remark: remark

@@ -39,7 +39,7 @@ export function OrderDetailDialog({
   const [reason, setReason] = useState('');
   const [showCancelForm, setShowCancelForm] = useState(false);
 
-  const { data: res } = useReservationDetail(bookingId ? parseInt(bookingId) : 0);
+  const { data: res } = useReservationDetail(bookingId || '');
   const booking = res?.data?.data;
 
   const approveMutation = useApproveReservation();
@@ -60,7 +60,7 @@ export function OrderDetailDialog({
 
   const handleApprove = async () => {
     try {
-        await approveMutation.mutateAsync({ id: parseInt(bookingId), reviewerId: user?.id || 0 });
+        await approveMutation.mutateAsync({ id: bookingId, reviewerId: user?.id?.toString() || '' });
         toast.success('订单已通过');
         onClose();
     } catch (e) {
@@ -74,7 +74,7 @@ export function OrderDetailDialog({
       return;
     }
     try {
-        await rejectMutation.mutateAsync({ id: parseInt(bookingId), reviewerId: user?.id || 0, reason });
+        await rejectMutation.mutateAsync({ id: bookingId, reviewerId: user?.id?.toString() || '', reason });
         toast.success('订单已驳回');
         setShowRejectForm(false);
         setReason('');
@@ -90,7 +90,7 @@ export function OrderDetailDialog({
       return;
     }
     try {
-        await cancelMutation.mutateAsync({ id: parseInt(bookingId), staffId: user?.id || 0, reason });
+        await cancelMutation.mutateAsync({ id: bookingId, staffId: user?.id?.toString() || '', reason });
         toast.success('订单已取消');
         setShowCancelForm(false);
         setReason('');

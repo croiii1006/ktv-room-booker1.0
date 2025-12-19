@@ -40,7 +40,7 @@ export function LeaderBookingDetailDialog({
 
   // Determine if it's a real booking ID
   const isFreeSlot = bookingId.startsWith('free_');
-  const realBookingId = isFreeSlot ? 0 : parseInt(bookingId);
+  const realBookingId = isFreeSlot ? '' : bookingId;
 
   const { data: res, isLoading } = useReservationDetail(realBookingId);
   const booking = res?.data?.data;
@@ -119,7 +119,7 @@ export function LeaderBookingDetailDialog({
 
   const handleApprove = async () => {
     try {
-        await approveMutation.mutateAsync({ id: realBookingId, reviewerId: user?.id || 0 });
+        await approveMutation.mutateAsync({ id: realBookingId, reviewerId: user?.id?.toString() || '' });
         toast.success('订单已通过');
         onClose();
     } catch (e) {
@@ -133,7 +133,7 @@ export function LeaderBookingDetailDialog({
       return;
     }
     try {
-        await rejectMutation.mutateAsync({ id: realBookingId, reviewerId: user?.id || 0, reason });
+        await rejectMutation.mutateAsync({ id: realBookingId, reviewerId: user?.id?.toString() || '', reason });
         toast.success('订单已驳回');
         setShowRejectForm(false);
         setReason('');

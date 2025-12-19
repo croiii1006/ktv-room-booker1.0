@@ -68,7 +68,7 @@ export default function RoomMatrix() {
   const { data: scheduleData, isLoading } = useRoomSchedule(
     format(startDate, 'yyyy-MM-dd'), 
     format(endDate, 'yyyy-MM-dd'), 
-    selectedStoreId ? parseInt(selectedStoreId) : undefined,
+    selectedStoreId || undefined,
     { enabled: !!selectedStoreId }
   );
 
