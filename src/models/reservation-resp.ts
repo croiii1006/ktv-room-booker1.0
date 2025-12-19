@@ -134,6 +134,12 @@ export interface ReservationResp {
      */
     endMin?: number;
     /**
+     * 价格
+     * @type {number}
+     * @memberof ReservationResp
+     */
+    price?: number;
+    /**
      * 预计人数
      * @type {number}
      * @memberof ReservationResp

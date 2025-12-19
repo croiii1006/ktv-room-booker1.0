@@ -233,7 +233,7 @@ export function BookingDetailDialog({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">价格</span>
-              <span className="font-medium text-primary">¥{0}</span> {/* Price not in ReservationResp */}
+              <span className="font-medium text-primary">¥{booking.price ?? 0}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">预定业务员</span>

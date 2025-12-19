@@ -133,7 +133,7 @@ export function OrderDetailDialog({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">价格</span>
-              <span className="font-medium text-primary">¥{0}</span>
+              <span className="font-medium text-primary">¥{booking.price ?? 0}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">申请人</span>

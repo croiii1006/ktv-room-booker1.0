@@ -66,7 +66,7 @@ export default function ApprovalList() {
                   <span>
                     申请人: <StaffNameDisplay id={order.staffId?.toString()} initialName={order.applyStaffName} showStaffNo />
                   </span>
-                  <span className="font-medium text-foreground">¥{0}</span>
+                  <span className="font-medium text-foreground">¥{order.price ?? 0}</span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
                   {order.createdAt}
