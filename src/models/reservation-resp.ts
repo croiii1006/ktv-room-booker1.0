@@ -146,6 +146,12 @@ export interface ReservationResp {
      */
     status?: ReservationRespStatusEnum;
     /**
+     * 房态: AVAILABLE/PENDING/BOOKED/FINISHED
+     * @type {string}
+     * @memberof ReservationResp
+     */
+    state?: string;
+    /**
      * 审核人ID
      * @type {number}
      * @memberof ReservationResp

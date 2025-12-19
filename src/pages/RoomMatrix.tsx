@@ -39,6 +39,7 @@ export default function RoomMatrix() {
   const [selectedCell, setSelectedCell] = useState<{ roomId: string; date: string } | null>(null);
   const [viewBookingId, setViewBookingId] = useState<string | null>(null);
   const [viewBookingRoomId, setViewBookingRoomId] = useState<string | null>(null);
+  const [viewBookingState, setViewBookingState] = useState<string | null>(null);
   const [selectedStoreId, setSelectedStoreId] = useState('');
   const [weekOffset, setWeekOffset] = useState(0);
 
@@ -91,24 +92,34 @@ export default function RoomMatrix() {
 
   const handleCellClick = (roomId: string, date: string) => {
     const booking = getBookingByRoomAndDate(roomId, date);
-    if (booking && booking.status !== 'FREE') { // Assuming FREE is default or null means free
+    // If booking exists and is not available/free
+    const isBooked = booking && (!booking.state || booking.state !== 'AVAILABLE');
+    
+    if (isBooked) {
       setViewBookingId(booking.reservationId?.toString() || '');
       setViewBookingRoomId(roomId);
+      setViewBookingState(booking.state || booking.status || null);
     } else if (!isLeader) {
       // Only salesperson can create bookings
       setSelectedCell({ roomId, date });
     } else {
-      // Leader can view free cell details too (maybe not needed? or just showing room info)
-      // For now, if free and leader, maybe show nothing or room detail?
-      // Keeping existing logic:
+      // Leader can view free cell details too
       setViewBookingId(`free_${roomId}_${date}`);
       setViewBookingRoomId(roomId);
+      setViewBookingState(null);
     }
   };
 
   const getCellStatus = (roomId: string, date: string): string => {
     const booking = getBookingByRoomAndDate(roomId, date);
-    return booking?.status || 'free';
+    if (!booking) return 'free';
+    
+    // Prioritize state if it exists (e.g., FINISHED, BOOKED)
+    if (booking.state && booking.state !== 'AVAILABLE') {
+      return booking.state;
+    }
+    
+    return booking.status || 'free';
   };
 
   const getStatusColor = (status: string) => {
@@ -310,6 +321,7 @@ export default function RoomMatrix() {
           onClose={() => {
             setViewBookingId(null);
             setViewBookingRoomId(null);
+            setViewBookingState(null);
           }}
           bookingId={viewBookingId || ''}
           roomName={resolveRoomName(viewBookingRoomId)}
@@ -323,12 +335,14 @@ export default function RoomMatrix() {
             if (!open) {
               setViewBookingId(null);
               setViewBookingRoomId(null);
+              setViewBookingState(null);
             }
           }}
           bookingId={viewBookingId || ''}
           roomName={resolveRoomName(viewBookingRoomId)}
           roomNo={getRoomNo(viewBookingRoomId)}
           roomType={getRoomType(viewBookingRoomId)}
+          bookingState={viewBookingState || undefined}
         />
       )}
     </div>

@@ -28,6 +28,7 @@ interface BookingDetailDialogProps {
   roomName?: string;
   roomNo?: string;
   isReviewMode?: boolean;
+  bookingState?: string;
 }
 
 export function BookingDetailDialog({
@@ -38,6 +39,7 @@ export function BookingDetailDialog({
   roomNo,
   roomType,
   isReviewMode = false,
+  bookingState,
 }: BookingDetailDialogProps) {
   const { user } = useAuth();
   const [showConsumptionForm, setShowConsumptionForm] = useState(false);
@@ -78,6 +80,13 @@ export function BookingDetailDialog({
   const formattedDate = booking.reserveDate ? format(new Date(booking.reserveDate), 'yyyy年MM月dd日 EEEE', {
     locale: zhCN,
   }) : '';
+
+  // Determine display status based on state and status
+  const displayStatus = (bookingState && bookingState !== 'AVAILABLE' 
+      ? bookingState 
+      : (booking.state && booking.state !== 'AVAILABLE' ? booking.state : booking.status)) || 'PENDING';
+
+  const isFinished = displayStatus === 'FINISHED';
 
   const handleApprove = async () => {
       setIsSubmitting(true);
@@ -170,7 +179,7 @@ export function BookingDetailDialog({
 
         <div className="space-y-4 py-4">
           <div className="flex justify-center mb-4">
-            <StatusBadge status={booking.status || 'PENDING'} className="text-sm px-4 py-1.5" />
+            <StatusBadge status={displayStatus} className="text-sm px-4 py-1.5" />
           </div>
 
           <div className="bg-secondary/50 rounded-lg p-4 space-y-3">
@@ -358,7 +367,7 @@ export function BookingDetailDialog({
               </div>
             ) : (
                 <div className="flex flex-col gap-3">
-                    {!isReviewMode && booking.status === 'APPROVED' && (
+                    {!isReviewMode && booking.status === 'APPROVED' && !isFinished && (
                     <Button variant="success" size="full" onClick={() => setShowConsumptionForm(true)}>
                         已到店消费申请
                     </Button>
