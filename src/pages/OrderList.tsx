@@ -27,9 +27,8 @@ export default function OrderList() {
   const { data: reservationData, isLoading, error } = useReservationList(undefined, undefined, statusMap[activeTab]);
   const bookings = reservationData?.data?.data?.list || [];
 
-  // Filter client-side if API doesn't support filtering by status properly or returns all
-  // For now assuming API returns filtered list if status is passed
-  
+  const selectedBooking = bookings.find(b => b.id?.toString() === selectedBookingId);
+
   return (
     <div className="min-h-screen bg-background">
       <PageHeader title="我的预定" />
@@ -88,7 +87,7 @@ export default function OrderList() {
                     </p>
                   </div>
                 </div>
-                <StatusBadge status={booking.status || 'PENDING'} />
+                <StatusBadge status={booking.status || 'PENDING'} state={booking.state} />
               </div>
 
               <div className="text-sm text-muted-foreground space-y-1">
@@ -145,17 +144,19 @@ export default function OrderList() {
         bookingId={selectedBookingId}
         open={!!selectedBookingId}
         onOpenChange={(open) => !open && setSelectedBookingId(null)}
+        hideConsumptionAction={true}
       />
     </div>
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, state }: { status: string, state?: string }) {
   const styles = {
     PENDING: 'bg-yellow-500/10 text-yellow-600',
     APPROVED: 'bg-green-500/10 text-green-600',
     REJECTED: 'bg-red-500/10 text-red-600',
     CANCELLED: 'bg-gray-500/10 text-gray-600',
+    FINISHED: 'bg-status-finished/20 text-red-700',
   };
 
   const labels = {
@@ -163,11 +164,15 @@ function StatusBadge({ status }: { status: string }) {
     APPROVED: '已通过',
     REJECTED: '已驳回',
     CANCELLED: '已取消',
+    FINISHED: '已完成',
   };
 
+  const displayStatus = (state && state !== 'AVAILABLE' ? state : status) as keyof typeof styles;
+  const safeStatus = styles[displayStatus] ? displayStatus : 'PENDING';
+
   return (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[status as keyof typeof styles] || styles.PENDING}`}>
-      {labels[status as keyof typeof labels] || status}
+    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[safeStatus]}`}>
+      {labels[safeStatus] || safeStatus}
     </span>
   );
 }

@@ -29,6 +29,7 @@ interface BookingDetailDialogProps {
   roomNo?: string;
   isReviewMode?: boolean;
   bookingState?: string;
+  hideConsumptionAction?: boolean;
 }
 
 export function BookingDetailDialog({
@@ -40,6 +41,7 @@ export function BookingDetailDialog({
   roomType,
   isReviewMode = false,
   bookingState,
+  hideConsumptionAction = false,
 }: BookingDetailDialogProps) {
   const { user } = useAuth();
   const [showConsumptionForm, setShowConsumptionForm] = useState(false);
@@ -367,7 +369,7 @@ export function BookingDetailDialog({
               </div>
             ) : (
                 <div className="flex flex-col gap-3">
-                    {!isReviewMode && booking.status === 'APPROVED' && !isFinished && (
+                    {!isReviewMode && booking.status === 'APPROVED' && !isFinished && !hideConsumptionAction && (
                     <Button variant="success" size="full" onClick={() => setShowConsumptionForm(true)}>
                         已到店消费申请
                     </Button>
