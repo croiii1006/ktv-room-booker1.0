@@ -198,7 +198,7 @@ export function LeaderBookingDetailDialog({
               <div className="flex justify-between">
                 <span className="text-muted-foreground">服务业务员</span>
                 <span className="font-medium">
-                  <StaffNameDisplay id={booking.serviceStaffName} initialName={booking.serviceStaffName} />
+                  <StaffNameDisplay initialName={booking.serviceStaffName} />
                 </span>
               </div>
             )}
