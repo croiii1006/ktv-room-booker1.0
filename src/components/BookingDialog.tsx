@@ -51,7 +51,7 @@ export function BookingDialog({
   const [remark, setRemark] = useState('');
 
   // Fetch customers directly
-  const { data: memberData } = useMemberList(1, 100, undefined, { enabled: open });
+  const { data: memberData } = useMemberList(1, 1000, undefined, { enabled: open });
   // API response structure: response.data (body) -> data (payload) -> list
   const customers = memberData?.data?.data?.list || [];
   
@@ -137,7 +137,7 @@ export function BookingDialog({
               <span className="font-medium">{formattedDate}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">价格</span>
+              <span className="text-muted-foreground">零售价</span>
               <span className="font-medium text-primary">¥{roomPrice}</span>
             </div>
           </div>
